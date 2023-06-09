@@ -72,3 +72,6 @@ view model =
     div []
         [ section [ class "section" ] [ h1 [] [ text "Home" ] ]
         ]
+
+
+--- ARNE
