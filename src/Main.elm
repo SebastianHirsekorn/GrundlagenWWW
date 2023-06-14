@@ -10,16 +10,17 @@ module Main exposing (main, view)
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, nav, p, section, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, href, id, placeholder, src, type_)
+import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (index)
 import List exposing (append, drop, indexedMap, length, map, map2, range, take)
+import Round
 import Svg.Attributes exposing (offset, style)
 import Url
 
 
-main : Program () { key : Nav.Key, url : Url.Url, page : Page, modal : Maybe ModalState, foods : List Food, searchTerm : String, response : List Ingredient, errorMsg : String } Msg
+main : Program () { key : Nav.Key, url : Url.Url, page : Page, modal : Maybe ModalState, foods : List Food, currNutrition : Nutrition, searchTerm : String, response : List Ingredient, selectedFood : Food, errorMsg : String } Msg
 main =
     Browser.application
         { init = init
@@ -37,8 +38,10 @@ type alias Model =
     , page : Page
     , modal : Maybe ModalState
     , foods : List Food
+    , currNutrition : Nutrition
     , searchTerm : String
     , response : List Ingredient
+    , selectedFood : Food
     , errorMsg : String
     }
 
@@ -79,13 +82,11 @@ init flags url key =
       , url = url
       , page = Home
       , modal = Nothing
-      , foods =
-            [ { name = "Ei", id = 1, img = "", amount = 200.0, nutrition = { kcal = 200.0, protein = 200.0, fat = 200.0, carbs = 200.0 } }
-            , { name = "Brot", id = 2, img = "", amount = 100.0, nutrition = { kcal = 100.0, protein = 100.0, fat = 100.0, carbs = 100.0 } }
-            , { name = "Arne", id = 3, img = "", amount = 100.0, nutrition = { kcal = 100.0, protein = 100.0, fat = 100.0, carbs = 100.0 } }
-            ]
+      , foods = []
+      , currNutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 }
       , searchTerm = ""
       , response = [ { name = "banana", id = 123, img = "banana.png" } ]
+      , selectedFood = { name = "", id = 0, img = "", amount = 1.0, nutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 } }
       , errorMsg = ""
       }
     , Cmd.none
@@ -101,6 +102,7 @@ type Msg
     | GotFoods (Result Http.Error HTTPSearchResults)
     | GotFoodData (Result Http.Error Food)
     | Input String
+    | InputAmount String
     | KeyDown Int
 
 
@@ -155,13 +157,21 @@ update msg model =
         GotFoodData httpResponse ->
             case httpResponse of
                 Ok result ->
-                    ( {model | modal = Just (ShowFood result)}, Cmd.none  )
+                    ( { model
+                        | selectedFood = result
+                        , modal = Just (ShowFood result)
+                      }
+                    , Cmd.none
+                    )
 
                 Err _ ->
                     ( { model | errorMsg = "Informationen werden nicht abgeholt" }, Cmd.none )
 
         Input input ->
             ( { model | searchTerm = input }, Cmd.none )
+
+        InputAmount input ->
+            ( { model | selectedFood = setAmount model.selectedFood input }, Cmd.none )
 
         KeyDown key ->
             if key == 13 then
@@ -174,6 +184,7 @@ update msg model =
 type FoodMsg
     = GetFoods String
     | GetFoodData String
+    | AddFood
     | DeleteFood Int
 
 
@@ -194,6 +205,27 @@ updateFood foodMsg model =
                 , timeout = Nothing
                 , tracker = Nothing
                 }
+            )
+
+        AddFood ->
+            ( let
+                food =
+                    setNutrition model.selectedFood
+              in
+              { model
+                | foods =
+                    List.append model.foods
+                        [ setNutrition food
+                        ]
+                , currNutrition =
+                    { kcal = model.currNutrition.kcal + food.nutrition.kcal
+                    , protein = model.currNutrition.protein + food.nutrition.protein
+                    , fat = model.currNutrition.fat + food.nutrition.fat
+                    , carbs = model.currNutrition.carbs + food.nutrition.carbs
+                    }
+                , modal = Nothing
+              }
+            , Cmd.none
             )
 
         GetFoodData id ->
@@ -265,7 +297,7 @@ navbar model =
     nav [ class "navbar is-primary" ]
         [ div [ class "navbar-brand" ]
             [ a [ class "navbar-item" ]
-                [ h1 [ class "tile" ] [ text "Kalorientracker" ]
+                [ h1 [ class "tile" ] [ text "Nutritiontracker" ]
                 ]
             ]
         , div [ class "navbar-menu" ]
@@ -329,7 +361,8 @@ modalFooter : List (Html Msg) -> Html Msg
 modalFooter modalButtons =
     footer [ class "modal-card-foot" ]
         (modalButtons
-            ++ [ button [ class "button is-primary", onClick CloseModal ] [ text "Schließen" ]
+            ++ [ button [ class "button is-primary", onClick (ChangeFoods AddFood) ] [ text "Hinzufügen" ]
+               , button [ class "button", onClick CloseModal ] [ text "Schließen" ]
                ]
         )
 
@@ -346,17 +379,17 @@ showFoodModal food =
                             [ figure [ class "tile is-child image is-128x128" ]
                                 [ img [ src ("https://spoonacular.com/cdn/ingredients_100x100/" ++ food.img) ] []
                                 ]
-                            , input [ class "tile is-child input", type_ "number", placeholder "Suchen...", onInput Input ] []
+                            , input [ class "tile is-child input", type_ "number", onInput InputAmount ] []
                             ]
                         , div [ class "tile is-parent is-vertical" ]
                             [ h1 [ class "tile is-child title is-4", Html.Attributes.style "width" "100%" ] [ text "Nährwerte" ]
                             , div [ class "content" ]
                                 [ table []
                                     [ tbody []
-                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat food.nutrition.kcal) ] ]
-                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat food.nutrition.carbs) ] ]
-                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat food.nutrition.fat) ] ]
-                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat food.nutrition.protein) ] ]
+                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat (food.nutrition.kcal * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat (food.nutrition.carbs * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat (food.nutrition.fat * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat (food.nutrition.protein * food.amount)) ] ]
                                         ]
                                     ]
                                 ]
@@ -419,11 +452,11 @@ foodToListTable foods tableType =
                 (\i food ->
                     tr [ class "table-row-hover-background-color", id ("row" ++ String.fromInt i) ]
                         [ td [] [ text food.name ]
-                        , td [] [ text (String.fromFloat food.amount) ]
-                        , td [] [ text (String.fromFloat food.nutrition.kcal) ]
-                        , td [] [ text (String.fromFloat food.nutrition.carbs) ]
-                        , td [] [ text (String.fromFloat food.nutrition.fat) ]
-                        , td [] [ text (String.fromFloat food.nutrition.protein) ]
+                        , td [] [ text (Round.round 2 food.amount) ]
+                        , td [] [ text (Round.round 2 food.nutrition.kcal) ]
+                        , td [] [ text (Round.round 2 food.nutrition.carbs) ]
+                        , td [] [ text (Round.round 2 food.nutrition.fat) ]
+                        , td [] [ text (Round.round 2 food.nutrition.protein) ]
                         , td [] [ button [ class "delete", onClick (ChangeFoods (DeleteFood i)) ] [ text "löschen" ] ]
                         ]
                 )
@@ -547,3 +580,20 @@ ariaLabel value =
 onKeyDown : (Int -> msg) -> Attribute msg
 onKeyDown tagger =
     Html.Events.on "keydown" (Json.Decode.map tagger Html.Events.keyCode)
+
+
+setAmount : Food -> String -> Food
+setAmount food amount =
+    { food | amount = Maybe.withDefault 1.0 (String.toFloat amount) }
+
+
+setNutrition : Food -> Food
+setNutrition food =
+    { food
+        | nutrition =
+            { kcal = food.nutrition.kcal * food.amount
+            , protein = food.nutrition.protein * food.amount
+            , fat = food.nutrition.fat * food.amount
+            , carbs = food.nutrition.carbs * food.amount
+            }
+    }

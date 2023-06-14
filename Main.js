@@ -10740,31 +10740,9 @@ var $author$project$Main$init = F3(
 	function (flags, url, key) {
 		return _Utils_Tuple2(
 			{
+				currNutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0},
 				errorMsg: '',
-				foods: _List_fromArray(
-					[
-						{
-						amount: 200.0,
-						id: 1,
-						img: '',
-						name: 'Ei',
-						nutrition: {carbs: 200.0, fat: 200.0, kcal: 200.0, protein: 200.0}
-					},
-						{
-						amount: 100.0,
-						id: 2,
-						img: '',
-						name: 'Brot',
-						nutrition: {carbs: 100.0, fat: 100.0, kcal: 100.0, protein: 100.0}
-					},
-						{
-						amount: 100.0,
-						id: 3,
-						img: '',
-						name: 'Arne',
-						nutrition: {carbs: 100.0, fat: 100.0, kcal: 100.0, protein: 100.0}
-					}
-					]),
+				foods: _List_Nil,
 				key: key,
 				modal: $elm$core$Maybe$Nothing,
 				page: $author$project$Main$Home,
@@ -10773,6 +10751,13 @@ var $author$project$Main$init = F3(
 						{id: 123, img: 'banana.png', name: 'banana'}
 					]),
 				searchTerm: '',
+				selectedFood: {
+					amount: 1.0,
+					id: 0,
+					img: '',
+					name: '',
+					nutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0}
+				},
 				url: url
 			},
 			$elm$core$Platform$Cmd$none);
@@ -10792,6 +10777,18 @@ var $author$project$Main$ShowFood = function (a) {
 var $author$project$Main$Suche = {$: 'Suche'};
 var $elm$browser$Browser$Navigation$load = _Browser_load;
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $elm$core$String$toFloat = _String_toFloat;
+var $author$project$Main$setAmount = F2(
+	function (food, amount) {
+		return _Utils_update(
+			food,
+			{
+				amount: A2(
+					$elm$core$Maybe$withDefault,
+					1.0,
+					$elm$core$String$toFloat(amount))
+			});
+	});
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -11177,6 +11174,13 @@ var $author$project$Main$resultDecoder = A5(
 	A2($elm$json$Json$Decode$field, 'offset', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'number', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'totalResults', $elm$json$Json$Decode$int));
+var $author$project$Main$setNutrition = function (food) {
+	return _Utils_update(
+		food,
+		{
+			nutrition: {carbs: food.nutrition.carbs * food.amount, fat: food.nutrition.fat * food.amount, kcal: food.nutrition.kcal * food.amount, protein: food.nutrition.protein * food.amount}
+		});
+};
 var $elm$core$List$takeReverse = F3(
 	function (n, list, kept) {
 		takeReverse:
@@ -11332,6 +11336,25 @@ var $author$project$Main$updateFood = F2(
 							tracker: $elm$core$Maybe$Nothing,
 							url: 'https://api.spoonacular.com/food/ingredients/search?query=' + (food + '&number=10&sort=calories&sortDirection=desc&apiKey=a25e9078614b4a79948065747e2cc8cf')
 						}));
+			case 'AddFood':
+				return _Utils_Tuple2(
+					function () {
+						var food = $author$project$Main$setNutrition(model.selectedFood);
+						return _Utils_update(
+							model,
+							{
+								currNutrition: {carbs: model.currNutrition.carbs + food.nutrition.carbs, fat: model.currNutrition.fat + food.nutrition.fat, kcal: model.currNutrition.kcal + food.nutrition.kcal, protein: model.currNutrition.protein + food.nutrition.protein},
+								foods: A2(
+									$elm$core$List$append,
+									model.foods,
+									_List_fromArray(
+										[
+											$author$project$Main$setNutrition(food)
+										])),
+								modal: $elm$core$Maybe$Nothing
+							});
+					}(),
+					$elm$core$Platform$Cmd$none);
 			default:
 				var id = foodMsg.a;
 				return _Utils_Tuple2(
@@ -11456,7 +11479,8 @@ var $author$project$Main$update = F2(
 							model,
 							{
 								modal: $elm$core$Maybe$Just(
-									$author$project$Main$ShowFood(result))
+									$author$project$Main$ShowFood(result)),
+								selectedFood: result
 							}),
 						$elm$core$Platform$Cmd$none);
 				} else {
@@ -11472,6 +11496,15 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{searchTerm: input}),
+					$elm$core$Platform$Cmd$none);
+			case 'InputAmount':
+				var input = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							selectedFood: A2($author$project$Main$setAmount, model.selectedFood, input)
+						}),
 					$elm$core$Platform$Cmd$none);
 			default:
 				var key = msg.a;
@@ -11516,7 +11549,7 @@ var $author$project$Main$navbar = function (model) {
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Kalorientracker')
+										$elm$html$Html$text('Arnene')
 									]))
 							]))
 					])),
@@ -11586,6 +11619,273 @@ var $author$project$Main$FoodsList = {$: 'FoodsList'};
 var $author$project$Main$DeleteFood = function (a) {
 	return {$: 'DeleteFood', a: a};
 };
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $myrho$elm_round$Round$addSign = F2(
+	function (signed, str) {
+		var isNotZero = A2(
+			$elm$core$List$any,
+			function (c) {
+				return (!_Utils_eq(
+					c,
+					_Utils_chr('0'))) && (!_Utils_eq(
+					c,
+					_Utils_chr('.')));
+			},
+			$elm$core$String$toList(str));
+		return _Utils_ap(
+			(signed && isNotZero) ? '-' : '',
+			str);
+	});
+var $elm$core$String$cons = _String_cons;
+var $elm$core$Char$fromCode = _Char_fromCode;
+var $myrho$elm_round$Round$increaseNum = function (_v0) {
+	var head = _v0.a;
+	var tail = _v0.b;
+	if (_Utils_eq(
+		head,
+		_Utils_chr('9'))) {
+		var _v1 = $elm$core$String$uncons(tail);
+		if (_v1.$ === 'Nothing') {
+			return '01';
+		} else {
+			var headtail = _v1.a;
+			return A2(
+				$elm$core$String$cons,
+				_Utils_chr('0'),
+				$myrho$elm_round$Round$increaseNum(headtail));
+		}
+	} else {
+		var c = $elm$core$Char$toCode(head);
+		return ((c >= 48) && (c < 57)) ? A2(
+			$elm$core$String$cons,
+			$elm$core$Char$fromCode(c + 1),
+			tail) : '0';
+	}
+};
+var $elm$core$Basics$isInfinite = _Basics_isInfinite;
+var $elm$core$Basics$isNaN = _Basics_isNaN;
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padRight = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			string,
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)));
+	});
+var $elm$core$String$reverse = _String_reverse;
+var $myrho$elm_round$Round$splitComma = function (str) {
+	var _v0 = A2($elm$core$String$split, '.', str);
+	if (_v0.b) {
+		if (_v0.b.b) {
+			var before = _v0.a;
+			var _v1 = _v0.b;
+			var after = _v1.a;
+			return _Utils_Tuple2(before, after);
+		} else {
+			var before = _v0.a;
+			return _Utils_Tuple2(before, '0');
+		}
+	} else {
+		return _Utils_Tuple2('0', '0');
+	}
+};
+var $elm$core$Tuple$mapFirst = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			func(x),
+			y);
+	});
+var $myrho$elm_round$Round$toDecimal = function (fl) {
+	var _v0 = A2(
+		$elm$core$String$split,
+		'e',
+		$elm$core$String$fromFloat(
+			$elm$core$Basics$abs(fl)));
+	if (_v0.b) {
+		if (_v0.b.b) {
+			var num = _v0.a;
+			var _v1 = _v0.b;
+			var exp = _v1.a;
+			var e = A2(
+				$elm$core$Maybe$withDefault,
+				0,
+				$elm$core$String$toInt(
+					A2($elm$core$String$startsWith, '+', exp) ? A2($elm$core$String$dropLeft, 1, exp) : exp));
+			var _v2 = $myrho$elm_round$Round$splitComma(num);
+			var before = _v2.a;
+			var after = _v2.b;
+			var total = _Utils_ap(before, after);
+			var zeroed = (e < 0) ? A2(
+				$elm$core$Maybe$withDefault,
+				'0',
+				A2(
+					$elm$core$Maybe$map,
+					function (_v3) {
+						var a = _v3.a;
+						var b = _v3.b;
+						return a + ('.' + b);
+					},
+					A2(
+						$elm$core$Maybe$map,
+						$elm$core$Tuple$mapFirst($elm$core$String$fromChar),
+						$elm$core$String$uncons(
+							_Utils_ap(
+								A2(
+									$elm$core$String$repeat,
+									$elm$core$Basics$abs(e),
+									'0'),
+								total))))) : A3(
+				$elm$core$String$padRight,
+				e + 1,
+				_Utils_chr('0'),
+				total);
+			return _Utils_ap(
+				(fl < 0) ? '-' : '',
+				zeroed);
+		} else {
+			var num = _v0.a;
+			return _Utils_ap(
+				(fl < 0) ? '-' : '',
+				num);
+		}
+	} else {
+		return '';
+	}
+};
+var $myrho$elm_round$Round$roundFun = F3(
+	function (functor, s, fl) {
+		if ($elm$core$Basics$isInfinite(fl) || $elm$core$Basics$isNaN(fl)) {
+			return $elm$core$String$fromFloat(fl);
+		} else {
+			var signed = fl < 0;
+			var _v0 = $myrho$elm_round$Round$splitComma(
+				$myrho$elm_round$Round$toDecimal(
+					$elm$core$Basics$abs(fl)));
+			var before = _v0.a;
+			var after = _v0.b;
+			var r = $elm$core$String$length(before) + s;
+			var normalized = _Utils_ap(
+				A2($elm$core$String$repeat, (-r) + 1, '0'),
+				A3(
+					$elm$core$String$padRight,
+					r,
+					_Utils_chr('0'),
+					_Utils_ap(before, after)));
+			var totalLen = $elm$core$String$length(normalized);
+			var roundDigitIndex = A2($elm$core$Basics$max, 1, r);
+			var increase = A2(
+				functor,
+				signed,
+				A3($elm$core$String$slice, roundDigitIndex, totalLen, normalized));
+			var remains = A3($elm$core$String$slice, 0, roundDigitIndex, normalized);
+			var num = increase ? $elm$core$String$reverse(
+				A2(
+					$elm$core$Maybe$withDefault,
+					'1',
+					A2(
+						$elm$core$Maybe$map,
+						$myrho$elm_round$Round$increaseNum,
+						$elm$core$String$uncons(
+							$elm$core$String$reverse(remains))))) : remains;
+			var numLen = $elm$core$String$length(num);
+			var numZeroed = (num === '0') ? num : ((s <= 0) ? _Utils_ap(
+				num,
+				A2(
+					$elm$core$String$repeat,
+					$elm$core$Basics$abs(s),
+					'0')) : ((_Utils_cmp(
+				s,
+				$elm$core$String$length(after)) < 0) ? (A3($elm$core$String$slice, 0, numLen - s, num) + ('.' + A3($elm$core$String$slice, numLen - s, numLen, num))) : _Utils_ap(
+				before + '.',
+				A3(
+					$elm$core$String$padRight,
+					s,
+					_Utils_chr('0'),
+					after))));
+			return A2($myrho$elm_round$Round$addSign, signed, numZeroed);
+		}
+	});
+var $myrho$elm_round$Round$round = $myrho$elm_round$Round$roundFun(
+	F2(
+		function (signed, str) {
+			var _v0 = $elm$core$String$uncons(str);
+			if (_v0.$ === 'Nothing') {
+				return false;
+			} else {
+				if ('5' === _v0.a.a.valueOf()) {
+					if (_v0.a.b === '') {
+						var _v1 = _v0.a;
+						return !signed;
+					} else {
+						var _v2 = _v0.a;
+						return true;
+					}
+				} else {
+					var _v3 = _v0.a;
+					var _int = _v3.a;
+					return function (i) {
+						return ((i > 53) && signed) || ((i >= 53) && (!signed));
+					}(
+						$elm$core$Char$toCode(_int));
+				}
+			}
+		}));
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Main$foodToListTable = F2(
@@ -11618,7 +11918,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.amount))
+											A2($myrho$elm_round$Round$round, 2, food.amount))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11626,7 +11926,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.kcal))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.kcal))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11634,7 +11934,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.carbs))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.carbs))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11642,7 +11942,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.fat))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.fat))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11650,7 +11950,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.protein))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.protein))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11886,8 +12186,12 @@ var $author$project$Main$searchResultsTable = function (model) {
 			]));
 };
 var $elm$html$Html$section = _VirtualDom_node('section');
+var $author$project$Main$InputAmount = function (a) {
+	return {$: 'InputAmount', a: a};
+};
 var $elm$html$Html$figure = _VirtualDom_node('figure');
 var $elm$html$Html$img = _VirtualDom_node('img');
+var $author$project$Main$AddFood = {$: 'AddFood'};
 var $author$project$Main$CloseModal = {$: 'CloseModal'};
 var $elm$html$Html$footer = _VirtualDom_node('footer');
 var $author$project$Main$modalFooter = function (modalButtons) {
@@ -11906,6 +12210,18 @@ var $author$project$Main$modalFooter = function (modalButtons) {
 					_List_fromArray(
 						[
 							$elm$html$Html$Attributes$class('button is-primary'),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$ChangeFoods($author$project$Main$AddFood))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Hinzufügen')
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('button'),
 							$elm$html$Html$Events$onClick($author$project$Main$CloseModal)
 						]),
 					_List_fromArray(
@@ -12029,8 +12345,7 @@ var $author$project$Main$showFoodModal = function (food) {
 															[
 																$elm$html$Html$Attributes$class('tile is-child input'),
 																$elm$html$Html$Attributes$type_('number'),
-																$elm$html$Html$Attributes$placeholder('Suchen...'),
-																$elm$html$Html$Events$onInput($author$project$Main$Input)
+																$elm$html$Html$Events$onInput($author$project$Main$InputAmount)
 															]),
 														_List_Nil)
 													])),
@@ -12089,7 +12404,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.kcal))
+																								$elm$core$String$fromFloat(food.nutrition.kcal * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12110,7 +12425,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.carbs))
+																								$elm$core$String$fromFloat(food.nutrition.carbs * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12131,7 +12446,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.fat))
+																								$elm$core$String$fromFloat(food.nutrition.fat * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12152,7 +12467,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.protein))
+																								$elm$core$String$fromFloat(food.nutrition.protein * food.amount))
 																							]))
 																					]))
 																			]))
@@ -12319,4 +12634,4 @@ var $author$project$Main$view = function (model) {
 var $author$project$Main$main = $elm$browser$Browser$application(
 	{init: $author$project$Main$init, onUrlChange: $author$project$Main$UrlChanged, onUrlRequest: $author$project$Main$LinkClicked, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Main.Food":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String, amount : Basics.Float, nutrition : Main.Nutrition }"},"Main.HTTPSearchResults":{"args":[],"type":"{ results : List.List Main.Ingredient, offset : Basics.Int, number : Basics.Int, totalResults : Basics.Int }"},"Main.Ingredient":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String }"},"Main.Nutrition":{"args":[],"type":"{ kcal : Basics.Float, protein : Basics.Float, fat : Basics.Float, carbs : Basics.Float }"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"LinkClicked":["Browser.UrlRequest"],"UrlChanged":["Url.Url"],"OpenModal":["Main.ModalMsg"],"CloseModal":[],"ChangeFoods":["Main.FoodMsg"],"GotFoods":["Result.Result Http.Error Main.HTTPSearchResults"],"GotFoodData":["Result.Result Http.Error Main.Food"],"Input":["String.String"],"KeyDown":["Basics.Int"]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Main.FoodMsg":{"args":[],"tags":{"GetFoods":["String.String"],"GetFoodData":["String.String"],"DeleteFood":["Basics.Int"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Main.ModalMsg":{"args":[],"tags":{"OpenFood":["Main.Food","Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Main.Food":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String, amount : Basics.Float, nutrition : Main.Nutrition }"},"Main.HTTPSearchResults":{"args":[],"type":"{ results : List.List Main.Ingredient, offset : Basics.Int, number : Basics.Int, totalResults : Basics.Int }"},"Main.Ingredient":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String }"},"Main.Nutrition":{"args":[],"type":"{ kcal : Basics.Float, protein : Basics.Float, fat : Basics.Float, carbs : Basics.Float }"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"LinkClicked":["Browser.UrlRequest"],"UrlChanged":["Url.Url"],"OpenModal":["Main.ModalMsg"],"CloseModal":[],"ChangeFoods":["Main.FoodMsg"],"GotFoods":["Result.Result Http.Error Main.HTTPSearchResults"],"GotFoodData":["Result.Result Http.Error Main.Food"],"Input":["String.String"],"InputAmount":["String.String"],"KeyDown":["Basics.Int"]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Main.FoodMsg":{"args":[],"tags":{"GetFoods":["String.String"],"GetFoodData":["String.String"],"AddFood":[],"DeleteFood":["Basics.Int"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Main.ModalMsg":{"args":[],"tags":{"OpenFood":["Main.Food","Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
