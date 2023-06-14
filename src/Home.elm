@@ -7,6 +7,8 @@ module Home exposing (view)
 --import Svg.Attributes as SvgAttr
 --import Svg.Events
 
+--hi sebastian
+
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (Attribute, Html, a, button, div, h1, input, nav, section, table, tbody, td, text, th, thead, tr)

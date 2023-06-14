@@ -3,22 +3,28 @@ module Main exposing (main, view)
 --import Http
 --import Json.Decode exposing (Decoder, andThen, field, int, list, map, map2, map3, map4, string)
 --import String
---import Svg
---import Svg.Attributes as SvgAttr
 --import Svg.Events
 
+import Array exposing (Array)
 import Browser
 import Browser.Navigation as Nav
+import Color exposing (Color)
 import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, nav, p, section, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (index)
 import List exposing (append, drop, indexedMap, length, map, map2, range, take)
+import Path
 import Round
+import Shape exposing (defaultPieConfig)
 import Svg.Attributes exposing (offset, style)
+import TypedSvg exposing (g, svg, text_, circle, rect, polygon, path)
+import TypedSvg.Attributes exposing (width, height, viewBox, dy, fill, stroke, textAnchor, transform, stroke, strokeWidth, opacity, fillOpacity, cx, cy, r, x, y, points, d)
+{- import TypedSvg.Attributes.InPx exposing (height, width) -}
+import TypedSvg.Core exposing (Svg)
+import TypedSvg.Types exposing (AnchorAlignment(..), Paint(..), Transform(..), em, px)
 import Url
-
 
 main : Program () { key : Nav.Key, url : Url.Url, page : Page, modal : Maybe ModalState, foods : List Food, currNutrition : Nutrition, searchTerm : String, response : List Ingredient, selectedFood : Food, errorMsg : String } Msg
 main =
@@ -192,7 +198,12 @@ updateFood : FoodMsg -> Model -> ( Model, Cmd Msg )
 updateFood foodMsg model =
     case foodMsg of
         DeleteFood i ->
-            ( { model | foods = append (take i model.foods) (drop (i + 1) model.foods) }, Cmd.none )
+            ( { model
+                | foods = append (take i model.foods) (drop (i + 1) model.foods)
+                , currNutrition = updateCurrNutrition model
+              }
+            , Cmd.none
+            )
 
         GetFoods food ->
             ( model
@@ -217,12 +228,7 @@ updateFood foodMsg model =
                     List.append model.foods
                         [ setNutrition food
                         ]
-                , currNutrition =
-                    { kcal = model.currNutrition.kcal + food.nutrition.kcal
-                    , protein = model.currNutrition.protein + food.nutrition.protein
-                    , fat = model.currNutrition.fat + food.nutrition.fat
-                    , carbs = model.currNutrition.carbs + food.nutrition.carbs
-                    }
+                , currNutrition = updateCurrNutrition model
                 , modal = Nothing
               }
             , Cmd.none
@@ -242,6 +248,34 @@ updateFood foodMsg model =
                 , tracker = Nothing
                 }
             )
+
+
+updateCurrNutrition : Model -> Nutrition
+updateCurrNutrition model =
+    { kcal = List.foldl (+) 0 (List.map (getNutrition "kcal") model.foods)
+    , protein = List.foldl (+) 0 (List.map (getNutrition "protein") model.foods)
+    , fat = List.foldl (+) 0 (List.map (getNutrition "fat") model.foods)
+    , carbs = List.foldl (+) 0 (List.map (getNutrition "carbs") model.foods)
+    }
+
+
+getNutrition : String -> Food -> Float
+getNutrition nutritionType food =
+    case nutritionType of
+        "kcal" ->
+            food.nutrition.kcal
+
+        "protein" ->
+            food.nutrition.protein
+
+        "fat" ->
+            food.nutrition.fat
+
+        "carbs" ->
+            food.nutrition.carbs
+
+        _ ->
+            0.0
 
 
 type ModalMsg
@@ -297,7 +331,7 @@ navbar model =
     nav [ class "navbar is-primary" ]
         [ div [ class "navbar-brand" ]
             [ a [ class "navbar-item" ]
-                [ h1 [ class "tile" ] [ text "Nutritiontracker" ]
+                [ h1 [ class "tile" ] [ img[src "/src/NutriTrack23.svg"][] ]
                 ]
             ]
         , div [ class "navbar-menu" ]
@@ -314,7 +348,53 @@ pageContent : Model -> Html Msg
 pageContent model =
     case model.page of
         Home ->
-            section [ class "section" ] [ h1 [] [ text "Home" ] ]
+            section [ class "section" ]
+                [ nav [ class "level" ]
+                    [ div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Kalorien" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.kcal) ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Kohlenhydrate" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.carbs) ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Fett" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.fat) ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Eiweiß" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.protein) ]
+                            ]
+                        ]
+                    ]
+                , div [ class "columns"]
+                    [ div [ class "column", style "max-width: 300px; margin: auto"]
+                        [ foodChart
+                            [ ( "Kalorien", model.currNutrition.kcal )
+                            , ( "frei", 2000-model.currNutrition.kcal )
+                            ]
+                        ]
+                        , div [ class "column", style "max-width: 300px; margin: auto"]
+                        [
+                           img[src "/src/NutriTrack23_Logo.svg"][]
+                        ]
+                    , div [ class "column", style "max-width: 300px; margin: auto"]
+                        [ foodChart
+                            [ ( "Protein", model.currNutrition.protein )
+                            , ( "Kohlenhydrate", model.currNutrition.carbs )
+                            , ( "Fett", model.currNutrition.fat )
+                            ]
+                        ]
+                    ]
+                ]
 
         Liste ->
             section [ class "section" ]
@@ -401,10 +481,53 @@ showFoodModal food =
         , modalFooter []
         ]
 
+--Logo
+{- logoSvg : Svg Msg
+logoSvg = svg[viewBox 0 0 200 200][circle[cx (px 100), cy (px 100), r (px 100), fill <| Paint <| Color.rgb255 0 209 178][text_[x (px 100), y (px 100), width (px 100), fill <| Paint <| Color.rgb255 255 255 255][text "NutriTrack23"]]]
+ -}
 
+--Chart
+
+colors : Array Color
+colors =
+    Array.fromList
+        [ Color.rgb255 0 209 178
+        , Color.rgb255 0 158 134
+        , Color.rgb255 0 107 90
+        ]
+
+pieSlice : Int -> Shape.Arc -> Svg msg
+pieSlice index datum =
+    Path.element (Shape.arc datum) [ fill <| Paint <| Maybe.withDefault Color.black <| Array.get index colors, stroke <| Paint Color.white ]
+
+pieLabel : Shape.Arc -> ( String, Float ) -> Svg msg
+pieLabel slice ( label, _ ) =
+    let
+        ( x, y ) =
+            Shape.centroid { slice | innerRadius = 50, outerRadius = 50 }
+    in
+    text_
+        [ transform [ Translate x y ]
+        , dy (em 0.25)
+        , textAnchor AnchorMiddle
+        , fill <| Paint <| Color.white
+        ]
+        [ text label ]
+
+foodChart : List ( String, Float ) -> Svg msg
+foodChart model =
+    let
+        pieData =
+            model |> List.map Tuple.second |> Shape.pie { defaultPieConfig | outerRadius = 100 }
+    in
+    svg [ viewBox 0 0 200 200]
+        [ g [ transform [ Translate 100 100 ] ]
+            [ g [] <| List.indexedMap pieSlice pieData
+            , g [] <| List.map2 pieLabel pieData model
+            ]
+        ]
 
 --Table
-
 
 type TableType
     = FoodsList
