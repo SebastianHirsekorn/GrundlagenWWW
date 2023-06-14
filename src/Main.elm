@@ -1,15 +1,8 @@
 module Main exposing (main, view)
 
---import Http
---import Json.Decode exposing (Decoder, andThen, field, int, list, map, map2, map3, map4, string)
---import String
---import Svg
---import Svg.Attributes as SvgAttr
---import Svg.Events
-
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, nav, p, section, span, table, tbody, td, text, th, thead, tr)
+import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, label, nav, option, p, section, select, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_)
 import Html.Events exposing (onClick, onInput)
 import Http
@@ -20,7 +13,22 @@ import Svg.Attributes exposing (offset, style)
 import Url
 
 
-main : Program () { key : Nav.Key, url : Url.Url, page : Page, modal : Maybe ModalState, foods : List Food, currNutrition : Nutrition, searchTerm : String, response : List Ingredient, selectedFood : Food, errorMsg : String } Msg
+main :
+    Program
+        ()
+        { key : Nav.Key
+        , url : Url.Url
+        , page : Page
+        , modal : Maybe ModalState
+        , foods : List Food
+        , currNutrition : Nutrition
+        , searchTerm : String
+        , response : List Ingredient
+        , selectedFood : Food
+        , errorMsg : String
+        , settings : Settings
+        }
+        Msg
 main =
     Browser.application
         { init = init
@@ -43,17 +51,45 @@ type alias Model =
     , response : List Ingredient
     , selectedFood : Food
     , errorMsg : String
+    , settings : Settings
     }
+
+
+
+---UtilTypes---
 
 
 type Page
     = Home
     | Liste
     | Suche
+    | Einstellungen
 
 
 type ModalState
     = ShowFood Food
+
+
+type Input
+    = SearchInput
+    | FoodAmountInput
+    | SearchNumberInput
+    | SearchSortInput
+    | SearchSortDirectionInput
+
+
+
+--- Settings ---
+
+
+type alias Settings =
+    { searchSettings : { number : String, sort : String, sortDirection : String }
+    , nutritionSettings : { kcalGoal : String, fatSplit : String, carbsSplit : String, proteinSplit : String }
+    }
+
+
+
+--- Food ----
 
 
 type alias Food =
@@ -76,6 +112,10 @@ type alias Ingredient =
     { name : String, id : Int, img : String }
 
 
+
+--- init ---
+
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { key = key
@@ -88,6 +128,10 @@ init flags url key =
       , response = [ { name = "banana", id = 123, img = "banana.png" } ]
       , selectedFood = { name = "", id = 0, img = "", amount = 1.0, nutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 } }
       , errorMsg = ""
+      , settings =
+            { searchSettings = { number = "10", sort = "protein", sortDirection = "desc" }
+            , nutritionSettings = { kcalGoal = "2000", fatSplit = "33.33", carbsSplit = "33.33", proteinSplit = "33.33" }
+            }
       }
     , Cmd.none
     )
@@ -101,8 +145,7 @@ type Msg
     | ChangeFoods FoodMsg
     | GotFoods (Result Http.Error HTTPSearchResults)
     | GotFoodData (Result Http.Error Food)
-    | Input String
-    | InputAmount String
+    | Input Input String
     | KeyDown Int
 
 
@@ -130,6 +173,9 @@ update msg model =
 
                         Just "search" ->
                             Suche
+
+                        Just "settings" ->
+                            Einstellungen
 
                         _ ->
                             Home
@@ -167,11 +213,22 @@ update msg model =
                 Err _ ->
                     ( { model | errorMsg = "Informationen werden nicht abgeholt" }, Cmd.none )
 
-        Input input ->
-            ( { model | searchTerm = input }, Cmd.none )
+        Input inputType input ->
+            case inputType of
+                SearchInput ->
+                    ( { model | searchTerm = input }, Cmd.none )
 
-        InputAmount input ->
-            ( { model | selectedFood = setAmount model.selectedFood input }, Cmd.none )
+                FoodAmountInput ->
+                    ( { model | selectedFood = setAmount model.selectedFood input }, Cmd.none )
+
+                SearchNumberInput ->
+                    ( { model | settings = setSearchSettings model.settings "number" input }, Cmd.none )
+
+                SearchSortInput ->
+                    ( { model | settings = setSearchSettings model.settings "sort" input }, Cmd.none )
+
+                SearchSortDirectionInput ->
+                    ( { model | settings = setSearchSettings model.settings "direction" input }, Cmd.none )
 
         KeyDown key ->
             if key == 13 then
@@ -183,7 +240,7 @@ update msg model =
 
 type FoodMsg
     = GetFoods String
-    | GetFoodData String
+    | GetFoodData Food String
     | AddFood
     | DeleteFood Int
 
@@ -199,7 +256,20 @@ updateFood foodMsg model =
             , Http.request
                 { method = "GET"
                 , headers = []
-                , url = "https://api.spoonacular.com/food/ingredients/search?query=" ++ food ++ "&number=10&sort=calories&sortDirection=desc&apiKey=a25e9078614b4a79948065747e2cc8cf"
+                , url =
+                    let
+                        settings =
+                            model.settings.searchSettings
+                    in
+                    "https://api.spoonacular.com/food/ingredients/search?query="
+                        ++ food
+                        ++ "&number="
+                        ++ settings.number
+                        ++ "&sort="
+                        ++ settings.sort
+                        ++ "&sortDirection="
+                        ++ settings.sortDirection
+                        ++ "&apiKey=a25e9078614b4a79948065747e2cc8cf"
                 , body = Http.emptyBody
                 , expect = Http.expectJson GotFoods resultDecoder
                 , timeout = Nothing
@@ -228,14 +298,14 @@ updateFood foodMsg model =
             , Cmd.none
             )
 
-        GetFoodData id ->
-            ( model
+        GetFoodData food id ->
+            ( { model | modal = Just (ShowFood food) }
             , Http.request
                 { method = "GET"
                 , headers = []
+                , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1&apiKey=a25e9078614b4a79948065747e2cc8cf"
 
-                {- , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1" -}
-                , url = "../json/foodData.json"
+                {- , url = "../json/foodData.json" -}
                 , body = Http.emptyBody
                 , expect = Http.expectJson GotFoodData foodDecoder
                 , timeout = Nothing
@@ -253,17 +323,7 @@ updateModal modalMsg model =
     case modalMsg of
         OpenFood food id ->
             ( { model | modal = Just (ShowFood food) }
-            , Http.request
-                { method = "GET"
-                , headers = []
-
-                {- , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1" -}
-                , url = "../json/foodData.json"
-                , body = Http.emptyBody
-                , expect = Http.expectJson GotFoodData foodDecoder
-                , timeout = Nothing
-                , tracker = Nothing
-                }
+            , Cmd.none
             )
 
 
@@ -306,6 +366,8 @@ navbar model =
                 , a [ class "navbar-item", href "#search" ] [ text "Suche" ]
                 , a [ class "navbar-item", href "#list" ] [ text "Liste" ]
                 ]
+            , div [ class "navbar-end" ]
+                [ a [ class "navbar-item", href "#settings" ] [ span [ class "icon" ] [ Html.i [ class "fas fa-cog" ] [] ] ] ]
             ]
         ]
 
@@ -325,17 +387,20 @@ pageContent model =
             section [ class "section" ]
                 [ div [ class "container" ]
                     [ div [ class "field has-addons" ]
-                        [ div [ class "control" ] [ input [ class "input", type_ "text", placeholder "Suchen...", onInput Input, onKeyDown KeyDown, Html.Attributes.style "width" "75em" ] [] ]
+                        [ div [ class "control" ] [ input [ class "input", type_ "text", placeholder "Suchen...", onInput (Input SearchInput), onKeyDown KeyDown, Html.Attributes.style "width" "75em" ] [] ]
                         , div [ class "control" ] [ button [ class "button is-primary", onClick (ChangeFoods (GetFoods model.searchTerm)) ] [ text "Suchen" ] ]
                         ]
                     , searchResultsTable model
-                    , viewModal model
+                    , modalView model
                     ]
                 ]
 
+        Einstellungen ->
+            section [ class "section" ] [ settingsView model ]
 
-viewModal : Model -> Html Msg
-viewModal model =
+
+modalView : Model -> Html Msg
+modalView model =
     case model.modal of
         Nothing ->
             span [] []
@@ -379,7 +444,7 @@ showFoodModal food =
                             [ figure [ class "tile is-child image is-128x128" ]
                                 [ img [ src ("https://spoonacular.com/cdn/ingredients_100x100/" ++ food.img) ] []
                                 ]
-                            , input [ class "tile is-child input", type_ "number", onInput InputAmount ] []
+                            , input [ class "tile is-child input", type_ "number", onInput (Input FoodAmountInput) ] []
                             ]
                         , div [ class "tile is-parent is-vertical" ]
                             [ h1 [ class "tile is-child title is-4", Html.Attributes.style "width" "100%" ] [ text "Nährwerte" ]
@@ -399,6 +464,82 @@ showFoodModal food =
                 ]
             ]
         , modalFooter []
+        ]
+
+
+
+---settingsView---
+
+
+settingsView : Model -> Html Msg
+settingsView model =
+    div [ class "container" ]
+        [ searchSettingsSection
+        , nutritionSettingsSection model
+        ]
+
+
+searchSettingsSection : Html Msg
+searchSettingsSection =
+    div []
+        [ h1 [ class "subtitle" ] [ text "Sucheinstellung" ]
+        , div [ class "field" ]
+            [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
+            , input [ class "input is-primary", type_ "text", placeholder "Anzahl Suchergebnisse", onInput (Input SearchNumberInput) ] []
+            , label [ class "label" ] [ text "Sortieren nach" ]
+            , div [ class "control" ]
+                [ div [ class "select is-primary" ]
+                    [ select []
+                        [ option [ onClick (Input SearchSortInput "calories") ] [ text "Kalorien" ]
+                        , option [ onClick (Input SearchSortInput "total-fat") ] [ text "Fett" ]
+                        , option [ onClick (Input SearchSortInput "carbs") ] [ text "Kohlenhydrate" ]
+                        , option [ onClick (Input SearchSortInput "protein") ] [ text "Eiweiß" ]
+                        ]
+                    ]
+                ]
+            ]
+        , label [ class "label" ] [ text "Sortierungsreihenfolge" ]
+        , div [ class "control" ]
+            [ div [ class "select is-primary" ]
+                [ select []
+                    [ option [ onClick (Input SearchSortDirectionInput "desc") ] [ text "Absteigend" ]
+                    , option [ onClick (Input SearchSortDirectionInput "asc") ] [ text "Aufsteigend" ]
+                    ]
+                ]
+            ]
+        ]
+
+
+nutritionSettingsSection : Model -> Html Msg
+nutritionSettingsSection model =
+    div []
+        [ h1 [ class "subtitle" ] [ text "Nährwerteinstellung" ]
+        , div [ class "field" ]
+            [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
+            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.fatSplit ] []
+            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.carbsSplit] []
+            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.proteinSplit ] []
+            , label [ class "label" ] [ text "Sortieren nach" ]
+            , div [ class "control" ]
+                [ div [ class "select is-primary" ]
+                    [ select []
+                        [ option [ onClick (Input SearchSortInput "calories") ] [ text "Kalorien" ]
+                        , option [ onClick (Input SearchSortInput "total-fat") ] [ text "Fett" ]
+                        , option [ onClick (Input SearchSortInput "carbs") ] [ text "Kohlenhydrate" ]
+                        , option [ onClick (Input SearchSortInput "protein") ] [ text "Eiweiß" ]
+                        ]
+                    ]
+                ]
+            ]
+        , label [ class "label" ] [ text "Sortierungsreihenfolge" ]
+        , div [ class "control" ]
+            [ div [ class "select is-primary" ]
+                [ select []
+                    [ option [ onClick (Input SearchSortDirectionInput "desc") ] [ text "Absteigend" ]
+                    , option [ onClick (Input SearchSortDirectionInput "asc") ] [ text "Aufsteigend" ]
+                    ]
+                ]
+            ]
         ]
 
 
@@ -476,7 +617,7 @@ foodToSearchResultTable : List Food -> List (Html Msg)
 foodToSearchResultTable foodList =
     List.indexedMap
         (\i ingredient ->
-            tr [ id ("row" ++ String.fromInt i), onClick (OpenModal (OpenFood ingredient 3)) ]
+            tr [ id ("row" ++ String.fromInt i), onClick (ChangeFoods (GetFoodData ingredient (String.fromInt ingredient.id))) ]
                 [ td [] [ text ingredient.name ]
                 ]
         )
@@ -597,3 +738,23 @@ setNutrition food =
             , carbs = food.nutrition.carbs * food.amount
             }
     }
+
+
+setSearchSettings : Settings -> String -> String -> Settings
+setSearchSettings settings settingsType value =
+    let
+        s =
+            settings.searchSettings
+    in
+    case settingsType of
+        "number" ->
+            { settings | searchSettings = { number = value, sort = s.sort, sortDirection = s.sortDirection } }
+
+        "sort" ->
+            { settings | searchSettings = { number = s.number, sort = value, sortDirection = s.sortDirection } }
+
+        "direction" ->
+            { settings | searchSettings = { number = s.number, sort = s.sort, sortDirection = value } }
+
+        _ ->
+            settings
