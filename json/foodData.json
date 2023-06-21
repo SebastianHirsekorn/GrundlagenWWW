@@ -31,7 +31,7 @@
       "nutrients": [
           {
               "name": "Calories",
-              "amount": 1000.5,
+              "amount": 100.5,
               "unit": "cal",
               "percentOfDailyNeeds": 22.63
           },
