@@ -413,7 +413,7 @@ pageContent model =
                                         , ( "", 2000 - model.currNutrition.fat )
                                         ]
                                         { innerRadius = 60, corner = 10, position = 0 }
-                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+                                        (Array.fromList [ Color.rgb255 0 107 90, Color.rgb255 206 219 234 ])
 
                                   else
                                     foodChart
@@ -421,7 +421,7 @@ pageContent model =
                                         , ( "", 4000 - model.currNutrition.fat )
                                         ]
                                         { innerRadius = 60, corner = 10, position = 0 }
-                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 107 90 ])
                                 ]
                             ]
                         , div [ style "display: flex; align-items: center;" ]
@@ -471,7 +471,7 @@ pageContent model =
                                         , ( "", 2000 - model.currNutrition.protein )
                                         ]
                                         { innerRadius = 60, corner = 10, position = 0 }
-                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+                                        (Array.fromList [ Color.rgb255 0 209 178, Color.rgb255 206 219 234 ])
 
                                   else
                                     foodChart
@@ -479,7 +479,7 @@ pageContent model =
                                         , ( "", 4000 - model.currNutrition.protein )
                                         ]
                                         { innerRadius = 60, corner = 10, position = 0 }
-                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 209 178 ])
                                 ]
                             ]
                         ]

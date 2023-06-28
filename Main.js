@@ -14845,7 +14845,7 @@ var $author$project$Main$pageContent = function (model) {
 														$elm$core$Array$fromList(
 															_List_fromArray(
 																[
-																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+																	A3($avh4$elm_color$Color$rgb255, 0, 107, 90),
 																	A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
 																]))) : A3(
 														$author$project$Main$foodChart,
@@ -14859,7 +14859,7 @@ var $author$project$Main$pageContent = function (model) {
 															_List_fromArray(
 																[
 																	A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+																	A3($avh4$elm_color$Color$rgb255, 0, 107, 90)
 																])))
 													]))
 											])),
@@ -15039,7 +15039,7 @@ var $author$project$Main$pageContent = function (model) {
 														$elm$core$Array$fromList(
 															_List_fromArray(
 																[
-																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+																	A3($avh4$elm_color$Color$rgb255, 0, 209, 178),
 																	A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
 																]))) : A3(
 														$author$project$Main$foodChart,
@@ -15053,7 +15053,7 @@ var $author$project$Main$pageContent = function (model) {
 															_List_fromArray(
 																[
 																	A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+																	A3($avh4$elm_color$Color$rgb255, 0, 209, 178)
 																])))
 													]))
 											]))
