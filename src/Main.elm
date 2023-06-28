@@ -363,94 +363,125 @@ pageContent model =
                             ]
                         ]
                     ]
-                , div [ class "columns " ]
-                    [ div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ if model.currNutrition.kcal <= 2000 then
-                            foodChart
-                                [ ( "noch " ++ (Round.round 2 (2000 - model.currNutrition.kcal) ++ " kcal"), model.currNutrition.kcal )
-                                , ( "", 2000 - model.currNutrition.kcal )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+                , div [ style "display: flex; align-items: center;" ]
+                    [ span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "max-width: 500px; margin:auto;" ]
+                            [ if model.currNutrition.kcal <= 2000 then
+                                foodChart
+                                    [ ( "noch " ++ (Round.round 2 (2000 - model.currNutrition.kcal) ++ " kcal"), model.currNutrition.kcal )
+                                    , ( "", 2000 - model.currNutrition.kcal )
+                                    ]
+                                    { innerRadius = 80, corner = 10, position = 0 }
+                                    (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
 
-                          else
-                            foodChart
-                                [ ( Round.round 2 (model.currNutrition.kcal - 2000) ++ " kcal zu viel", model.currNutrition.kcal - 2000 )
-                                , ( "", 4000 - model.currNutrition.kcal )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
-                        ]
-                    , div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ if model.currNutrition.fat <= 2000 then
-                            foodChart
-                                [ ( "noch " ++ (Round.round 2 (2000 - model.currNutrition.fat) ++ " g"), model.currNutrition.fat )
-                                , ( "", 2000 - model.currNutrition.fat )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
-
-                          else
-                            foodChart
-                                [ ( Round.round 2 (model.currNutrition.fat - 2000) ++ " g zu viel", model.currNutrition.fat - 2000 )
-                                , ( "", 4000 - model.currNutrition.fat )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
-                        ]
-                    , div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ if model.currNutrition.carbs <= 2000 then
-                            foodChart
-                                [ ( "noch " ++ (Round.round 2 (2000 - model.currNutrition.carbs) ++ " g"), model.currNutrition.carbs )
-                                , ( "", 2000 - model.currNutrition.carbs )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
-
-                          else
-                            foodChart
-                                [ ( Round.round 2 (model.currNutrition.carbs - 2000) ++ " g zu viel", model.currNutrition.carbs - 2000 )
-                                , ( "", 4000 - model.currNutrition.carbs )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
-                        ]
-                    , div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ if model.currNutrition.protein <= 2000 then
-                            foodChart
-                                [ ( "noch " ++ (Round.round 2 (2000 - model.currNutrition.protein) ++ " g"), model.currNutrition.protein )
-                                , ( "", 2000 - model.currNutrition.protein )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
-
-                          else
-                            foodChart
-                                [ ( Round.round 2 (model.currNutrition.protein - 2000) ++ "g zu viel", model.currNutrition.protein - 2000 )
-                                , ( "", 4000 - model.currNutrition.protein )
-                                ]
-                                { innerRadius = 80, corner = 10, position = 0 }
-                                (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
-                        ]
-                    ]
-                , div [ class "columns " ]
-                    [ div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ img [ src "/src/NutriTrack23_Logo.svg" ] []
-                        ]
-                    , div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [
-                        ]
-                    ,div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [ foodChart
-                            [ ( "Protein", model.currNutrition.protein )
-                            , ( "Kohlenhydrate", model.currNutrition.carbs )
-                            , ( "Fett", model.currNutrition.fat )
+                              else
+                                foodChart
+                                    [ ( Round.round 2 (model.currNutrition.kcal - 2000) ++ " kcal zu viel", model.currNutrition.kcal - 2000 )
+                                    , ( "", 4000 - model.currNutrition.kcal )
+                                    ]
+                                    { innerRadius = 80, corner = 10, position = 0 }
+                                    (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
                             ]
-                            { innerRadius = 0, corner = 0, position = 50 }
-                            (Array.fromList [ Color.rgb255 0 209 178, Color.rgb255 0 158 134, Color.rgb255 0 107 90 ])
-                        ],
-                        div [ class "column", style "max-width: 300px; margin: auto" ]
-                        [
+                        ]
+                    , span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "max-width: 500px; margin:auto;" ]
+                            [ foodChart
+                                [ ( "", model.currNutrition.protein )
+                                , ( "", model.currNutrition.carbs )
+                                , ( "", model.currNutrition.fat )
+                                ]
+                                { innerRadius = 0, corner = 0, position = 50 }
+                                (Array.fromList [ Color.rgb255 0 209 178, Color.rgb255 0 158 134, Color.rgb255 0 107 90 ])
+                            ]
+                        ]
+                    , span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #006b5a; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Fett" ]
+                                    , if model.currNutrition.fat <= 2000 then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (2000 - model.currNutrition.fat) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.fat - 2000) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.fat <= 2000 then
+                                    foodChart
+                                        [ ( "", model.currNutrition.fat )
+                                        , ( "", 2000 - model.currNutrition.fat )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.fat - 2000 )
+                                        , ( "", 4000 - model.currNutrition.fat )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                ]
+                            ]
+                        , div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #009e86; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Kohlenhydrate" ]
+                                    , if model.currNutrition.carbs <= 2000 then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (2000 - model.currNutrition.carbs) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.carbs - 2000) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.carbs <= 2000 then
+                                    foodChart
+                                        [ ( "", model.currNutrition.carbs )
+                                        , ( "", 2000 - model.currNutrition.carbs )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.carbs - 2000 )
+                                        , ( "", 4000 - model.currNutrition.carbs )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                ]
+                            ]
+                        , div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #00d1b2; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Eiweiss" ]
+                                    , if model.currNutrition.protein <= 2000 then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (2000 - model.currNutrition.protein) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.protein - 2000) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.protein <= 2000 then
+                                    foodChart
+                                        [ ( "", model.currNutrition.protein )
+                                        , ( "", 2000 - model.currNutrition.protein )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.protein - 2000 )
+                                        , ( "", 4000 - model.currNutrition.protein )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                ]
+                            ]
                         ]
                     ]
                 ]

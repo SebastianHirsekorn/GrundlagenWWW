@@ -14671,242 +14671,393 @@ var $author$project$Main$pageContent = function (model) {
 						$elm$html$Html$div,
 						_List_fromArray(
 							[
-								$elm$html$Html$Attributes$class('columns is-8')
+								$elm$svg$Svg$Attributes$style('display: flex; align-items: center;')
 							]),
 						_List_fromArray(
 							[
 								A2(
-								$elm$html$Html$div,
+								$elm$html$Html$span,
 								_List_fromArray(
 									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_fromArray(
-									[
-										(model.currNutrition.kcal <= 2000) ? A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.kcal) + ' kcal'),
-												model.currNutrition.kcal),
-												_Utils_Tuple2('', 2000 - model.currNutrition.kcal)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
-													A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
-												]))) : A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												A2($myrho$elm_round$Round$round, 2, model.currNutrition.kcal - 2000) + ' kcal zu viel',
-												model.currNutrition.kcal - 2000),
-												_Utils_Tuple2('', 4000 - model.currNutrition.kcal)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
-												])))
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_fromArray(
-									[
-										(model.currNutrition.fat <= 2000) ? A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.fat) + ' g'),
-												model.currNutrition.fat),
-												_Utils_Tuple2('', 2000 - model.currNutrition.fat)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
-													A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
-												]))) : A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												A2($myrho$elm_round$Round$round, 2, model.currNutrition.fat - 2000) + ' g zu viel',
-												model.currNutrition.fat - 2000),
-												_Utils_Tuple2('', 4000 - model.currNutrition.fat)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
-												])))
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_fromArray(
-									[
-										(model.currNutrition.carbs <= 2000) ? A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.carbs) + ' g'),
-												model.currNutrition.carbs),
-												_Utils_Tuple2('', 2000 - model.currNutrition.carbs)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
-													A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
-												]))) : A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												A2($myrho$elm_round$Round$round, 2, model.currNutrition.carbs - 2000) + ' g zu viel',
-												model.currNutrition.carbs - 2000),
-												_Utils_Tuple2('', 4000 - model.currNutrition.carbs)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
-												])))
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_fromArray(
-									[
-										(model.currNutrition.protein <= 2000) ? A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.protein) + ' g'),
-												model.currNutrition.protein),
-												_Utils_Tuple2('', 2000 - model.currNutrition.protein)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
-													A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
-												]))) : A3(
-										$author$project$Main$foodChart,
-										_List_fromArray(
-											[
-												_Utils_Tuple2(
-												A2($myrho$elm_round$Round$round, 2, model.currNutrition.protein - 2000) + 'g zu viel',
-												model.currNutrition.protein - 2000),
-												_Utils_Tuple2('', 4000 - model.currNutrition.protein)
-											]),
-										{corner: 10, innerRadius: 80, position: 0},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
-												])))
-									]))
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$class('columns is-8')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
+										$elm$svg$Svg$Attributes$style('display: inline-block; width: 33%; padding: 0em 2em 0em;')
 									]),
 								_List_fromArray(
 									[
 										A2(
-										$elm$html$Html$img,
+										$elm$html$Html$div,
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$src('/src/NutriTrack23_Logo.svg')
+												$elm$svg$Svg$Attributes$style('max-width: 500px; margin:auto;')
 											]),
-										_List_Nil)
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_Nil),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
-									]),
-								_List_fromArray(
-									[
-										A3(
-										$author$project$Main$foodChart,
 										_List_fromArray(
 											[
-												_Utils_Tuple2('Protein', model.currNutrition.protein),
-												_Utils_Tuple2('Kohlenhydrate', model.currNutrition.carbs),
-												_Utils_Tuple2('Fett', model.currNutrition.fat)
-											]),
-										{corner: 0, innerRadius: 0, position: 50},
-										$elm$core$Array$fromList(
-											_List_fromArray(
-												[
-													A3($avh4$elm_color$Color$rgb255, 0, 209, 178),
-													A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
-													A3($avh4$elm_color$Color$rgb255, 0, 107, 90)
-												])))
+												(model.currNutrition.kcal <= 2000) ? A3(
+												$author$project$Main$foodChart,
+												_List_fromArray(
+													[
+														_Utils_Tuple2(
+														'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.kcal) + ' kcal'),
+														model.currNutrition.kcal),
+														_Utils_Tuple2('', 2000 - model.currNutrition.kcal)
+													]),
+												{corner: 10, innerRadius: 80, position: 0},
+												$elm$core$Array$fromList(
+													_List_fromArray(
+														[
+															A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+															A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
+														]))) : A3(
+												$author$project$Main$foodChart,
+												_List_fromArray(
+													[
+														_Utils_Tuple2(
+														A2($myrho$elm_round$Round$round, 2, model.currNutrition.kcal - 2000) + ' kcal zu viel',
+														model.currNutrition.kcal - 2000),
+														_Utils_Tuple2('', 4000 - model.currNutrition.kcal)
+													]),
+												{corner: 10, innerRadius: 80, position: 0},
+												$elm$core$Array$fromList(
+													_List_fromArray(
+														[
+															A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
+															A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+														])))
+											]))
 									])),
 								A2(
-								$elm$html$Html$div,
+								$elm$html$Html$span,
 								_List_fromArray(
 									[
-										$elm$html$Html$Attributes$class('column'),
-										$elm$svg$Svg$Attributes$style('max-width: 300px; margin: auto')
+										$elm$svg$Svg$Attributes$style('display: inline-block; width: 33%; padding: 0em 2em 0em;')
 									]),
-								_List_Nil)
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												$elm$svg$Svg$Attributes$style('max-width: 500px; margin:auto;')
+											]),
+										_List_fromArray(
+											[
+												A3(
+												$author$project$Main$foodChart,
+												_List_fromArray(
+													[
+														_Utils_Tuple2('', model.currNutrition.protein),
+														_Utils_Tuple2('', model.currNutrition.carbs),
+														_Utils_Tuple2('', model.currNutrition.fat)
+													]),
+												{corner: 0, innerRadius: 0, position: 50},
+												$elm$core$Array$fromList(
+													_List_fromArray(
+														[
+															A3($avh4$elm_color$Color$rgb255, 0, 209, 178),
+															A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+															A3($avh4$elm_color$Color$rgb255, 0, 107, 90)
+														])))
+											]))
+									])),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$svg$Svg$Attributes$style('display: inline-block; width: 33%; padding: 0em 2em 0em;')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												$elm$svg$Svg$Attributes$style('display: flex; align-items: center;')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: auto; margin-right: 0.5em;')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$div,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('tags has-addons')
+															]),
+														_List_fromArray(
+															[
+																A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #006b5a; color: #ebf3fc; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text('Fett')
+																	])),
+																(model.currNutrition.fat <= 2000) ? A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #cedbea; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.fat) + ' g'))
+																	])) : A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #d35646; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		A2($myrho$elm_round$Round$round, 2, model.currNutrition.fat - 2000) + ' g zu viel')
+																	]))
+															]))
+													])),
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: 15%;')
+													]),
+												_List_fromArray(
+													[
+														(model.currNutrition.fat <= 2000) ? A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.fat),
+																_Utils_Tuple2('', 2000 - model.currNutrition.fat)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+																	A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
+																]))) : A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.fat - 2000),
+																_Utils_Tuple2('', 4000 - model.currNutrition.fat)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+																])))
+													]))
+											])),
+										A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												$elm$svg$Svg$Attributes$style('display: flex; align-items: center;')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: auto; margin-right: 0.5em;')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$div,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('tags has-addons')
+															]),
+														_List_fromArray(
+															[
+																A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #009e86; color: #ebf3fc; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text('Kohlenhydrate')
+																	])),
+																(model.currNutrition.carbs <= 2000) ? A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #cedbea; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.carbs) + ' g'))
+																	])) : A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #d35646; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		A2($myrho$elm_round$Round$round, 2, model.currNutrition.carbs - 2000) + ' g zu viel')
+																	]))
+															]))
+													])),
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: 15%;')
+													]),
+												_List_fromArray(
+													[
+														(model.currNutrition.carbs <= 2000) ? A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.carbs),
+																_Utils_Tuple2('', 2000 - model.currNutrition.carbs)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+																	A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
+																]))) : A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.carbs - 2000),
+																_Utils_Tuple2('', 4000 - model.currNutrition.carbs)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+																])))
+													]))
+											])),
+										A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												$elm$svg$Svg$Attributes$style('display: flex; align-items: center;')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: auto; margin-right: 0.5em;')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$div,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('tags has-addons')
+															]),
+														_List_fromArray(
+															[
+																A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #00d1b2; color: #ebf3fc; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text('Eiweiss')
+																	])),
+																(model.currNutrition.protein <= 2000) ? A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #cedbea; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		'noch ' + (A2($myrho$elm_round$Round$round, 2, 2000 - model.currNutrition.protein) + ' g'))
+																	])) : A2(
+																$elm$html$Html$span,
+																_List_fromArray(
+																	[
+																		$elm$html$Html$Attributes$class('tag'),
+																		$elm$svg$Svg$Attributes$style('background-color: #d35646; font-size: 1.2vw;')
+																	]),
+																_List_fromArray(
+																	[
+																		$elm$html$Html$text(
+																		A2($myrho$elm_round$Round$round, 2, model.currNutrition.protein - 2000) + ' g zu viel')
+																	]))
+															]))
+													])),
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$svg$Svg$Attributes$style('display: inline-block; width: 15%;')
+													]),
+												_List_fromArray(
+													[
+														(model.currNutrition.protein <= 2000) ? A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.protein),
+																_Utils_Tuple2('', 2000 - model.currNutrition.protein)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134),
+																	A3($avh4$elm_color$Color$rgb255, 206, 219, 234)
+																]))) : A3(
+														$author$project$Main$foodChart,
+														_List_fromArray(
+															[
+																_Utils_Tuple2('', model.currNutrition.protein - 2000),
+																_Utils_Tuple2('', 4000 - model.currNutrition.protein)
+															]),
+														{corner: 10, innerRadius: 60, position: 0},
+														$elm$core$Array$fromList(
+															_List_fromArray(
+																[
+																	A3($avh4$elm_color$Color$rgb255, 211, 86, 70),
+																	A3($avh4$elm_color$Color$rgb255, 0, 158, 134)
+																])))
+													]))
+											]))
+									]))
 							]))
 					]));
 		case 'Liste':
