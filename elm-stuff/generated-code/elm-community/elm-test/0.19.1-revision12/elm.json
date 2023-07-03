@@ -2,7 +2,7 @@
     "type": "application",
     "source-directories": [
         "src",
-        "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\AppData\\Roaming\\npm\\node_modules\\elm-test\\elm\\src",
+        "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\AppData\\Roaming\\npm\\node_modules\\elm-test\\elm\\src",
         "..\\..\\..\\..\\..\\src"
     ],
     "elm-version": "0.19.1",
@@ -33,11 +33,11 @@
             "folkertdev/svg-path-lowlevel": "4.0.1",
             "ianmackenzie/elm-1d-parameter": "1.0.1",
             "ianmackenzie/elm-float-extra": "1.1.0",
-            "ianmackenzie/elm-geometry": "3.11.0",
-            "ianmackenzie/elm-interval": "3.1.0",
+            "ianmackenzie/elm-geometry": "3.9.1",
+            "ianmackenzie/elm-interval": "2.0.0",
             "ianmackenzie/elm-triangular-mesh": "1.1.0",
             "ianmackenzie/elm-units": "2.9.0",
-            "ianmackenzie/elm-units-interval": "3.2.0",
+            "ianmackenzie/elm-units-interval": "2.3.0",
             "ianmackenzie/elm-units-prefixed": "2.7.0",
             "justinmimbs/date": "4.0.1",
             "justinmimbs/time-extra": "1.1.1",
