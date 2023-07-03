@@ -2,14 +2,15 @@ module Main exposing (main, view)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, label, nav, option, p, section, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_)
+import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, h3, header, img, input, label, nav, option, p, section, select, span, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (index)
 import List exposing (append, drop, indexedMap, length, map, map2, range, take)
 import Round
 import Svg.Attributes exposing (offset, style)
+import Time
 import Url
 
 
@@ -18,8 +19,10 @@ main :
         ()
         { key : Nav.Key
         , url : Url.Url
+        , counter : Int
         , page : Page
         , modal : Maybe ModalState
+        , popUp : Maybe PopupState
         , foods : List Food
         , currNutrition : Nutrition
         , searchTerm : String
@@ -43,8 +46,10 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
+    , counter : Int
     , page : Page
     , modal : Maybe ModalState
+    , popUp : Maybe PopupState
     , foods : List Food
     , currNutrition : Nutrition
     , searchTerm : String
@@ -70,12 +75,20 @@ type ModalState
     = ShowFood Food
 
 
+type PopupState
+    = FoodAdded
+
+
 type Input
     = SearchInput
     | FoodAmountInput
     | SearchNumberInput
     | SearchSortInput
     | SearchSortDirectionInput
+    | KcalInput
+    | FatSliderInput
+    | CarbsSliderInput
+    | ProteinSliderInput
 
 
 
@@ -89,6 +102,11 @@ type alias Settings =
 
 
 
+{- type Slider
+   = FatSlider
+   | CarbsSlider
+   | ProteinSlider
+-}
 --- Food ----
 
 
@@ -120,8 +138,10 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { key = key
       , url = url
+      , counter = 0
       , page = Home
       , modal = Nothing
+      , popUp = Nothing
       , foods = []
       , currNutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 }
       , searchTerm = ""
@@ -130,7 +150,12 @@ init flags url key =
       , errorMsg = ""
       , settings =
             { searchSettings = { number = "10", sort = "protein", sortDirection = "desc" }
-            , nutritionSettings = { kcalGoal = "2000", fatSplit = "33.33", carbsSplit = "33.33", proteinSplit = "33.33" }
+            , nutritionSettings =
+                { kcalGoal = "2000"
+                , fatSplit = "30"
+                , carbsSplit = "30"
+                , proteinSplit = "40"
+                }
             }
       }
     , Cmd.none
@@ -140,8 +165,10 @@ init flags url key =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | Tick Time.Posix
     | OpenModal ModalMsg
     | CloseModal
+    | TogglePopUp
     | ChangeFoods FoodMsg
     | GotFoods (Result Http.Error HTTPSearchResults)
     | GotFoodData (Result Http.Error Food)
@@ -183,11 +210,25 @@ update msg model =
             , Cmd.none
             )
 
+        Tick newTime ->
+            (  { model | counter = model.counter - 1, popUp =  if model.counter >= 0 then Just FoodAdded else Nothing
+                } 
+            , Cmd.none
+            )
+
         OpenModal modalMsg ->
             updateModal modalMsg model
 
         CloseModal ->
             ( { model | modal = Nothing }, Cmd.none )
+
+        TogglePopUp ->
+            ( { model
+                | popUp = Just FoodAdded
+                , counter = 5
+              }
+            , Cmd.none
+            )
 
         ChangeFoods foodMsg ->
             updateFood foodMsg model
@@ -229,6 +270,18 @@ update msg model =
 
                 SearchSortDirectionInput ->
                     ( { model | settings = setSearchSettings model.settings "direction" input }, Cmd.none )
+
+                KcalInput ->
+                    ( { model | settings = setNutritionSettings model.settings "kcal" input }, Cmd.none )
+
+                FatSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "fat" input }, Cmd.none )
+
+                CarbsSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "carbs" input }, Cmd.none )
+
+                ProteinSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "protein" input }, Cmd.none )
 
         KeyDown key ->
             if key == 13 then
@@ -294,6 +347,8 @@ updateFood foodMsg model =
                     , carbs = model.currNutrition.carbs + food.nutrition.carbs
                     }
                 , modal = Nothing
+                , popUp = Just FoodAdded
+                , counter = 3
               }
             , Cmd.none
             )
@@ -333,7 +388,7 @@ updateModal modalMsg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Time.every 1000 Tick
 
 
 
@@ -347,6 +402,8 @@ view model =
         [ div []
             [ navbar model
             , pageContent model
+            , button [ onClick TogglePopUp ] [ text "toggle" ]
+            , popup model
             ]
         ]
     }
@@ -397,6 +454,23 @@ pageContent model =
 
         Einstellungen ->
             section [ class "section" ] [ settingsView model ]
+
+
+popup : Model -> Html Msg
+popup model =
+    div
+        [ Html.Attributes.class
+            (if model.popUp == Just FoodAdded && model.counter > 0 then
+                "animate__animated animate__bounce showSnackbar box"
+
+             else
+                "animate__animated animate__bounce snackbar box "
+            )
+        ]
+        [ div
+            []
+            [ text "Eintrag hinzugefügt" ]
+        ]
 
 
 modalView : Model -> Html Msg
@@ -474,26 +548,26 @@ showFoodModal food =
 settingsView : Model -> Html Msg
 settingsView model =
     div [ class "container" ]
-        [ searchSettingsSection
+        [ searchSettingsSection model
         , nutritionSettingsSection model
         ]
 
 
-searchSettingsSection : Html Msg
-searchSettingsSection =
-    div []
+searchSettingsSection : Model -> Html Msg
+searchSettingsSection model =
+    div [ class "box" ]
         [ h1 [ class "subtitle" ] [ text "Sucheinstellung" ]
         , div [ class "field" ]
             [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
-            , input [ class "input is-primary", type_ "text", placeholder "Anzahl Suchergebnisse", onInput (Input SearchNumberInput) ] []
+            , input [ class "input is-primary", type_ "number", placeholder "Anzahl Suchergebnisse", value model.settings.searchSettings.number, onInput (Input SearchNumberInput) ] []
             , label [ class "label" ] [ text "Sortieren nach" ]
             , div [ class "control" ]
                 [ div [ class "select is-primary" ]
-                    [ select []
-                        [ option [ onClick (Input SearchSortInput "calories") ] [ text "Kalorien" ]
-                        , option [ onClick (Input SearchSortInput "total-fat") ] [ text "Fett" ]
-                        , option [ onClick (Input SearchSortInput "carbs") ] [ text "Kohlenhydrate" ]
-                        , option [ onClick (Input SearchSortInput "protein") ] [ text "Eiweiß" ]
+                    [ select [ onInput (Input SearchSortInput) ]
+                        [ option [ Html.Attributes.value "calories" ] [ text "Kalorien" ]
+                        , option [ Html.Attributes.value "total-fat" ] [ text "Fett" ]
+                        , option [ Html.Attributes.value "carbs" ] [ text "Kohlenhydrate" ]
+                        , option [ Html.Attributes.value "protein" ] [ text "Eiweiß" ]
                         ]
                     ]
                 ]
@@ -501,44 +575,125 @@ searchSettingsSection =
         , label [ class "label" ] [ text "Sortierungsreihenfolge" ]
         , div [ class "control" ]
             [ div [ class "select is-primary" ]
-                [ select []
-                    [ option [ onClick (Input SearchSortDirectionInput "desc") ] [ text "Absteigend" ]
-                    , option [ onClick (Input SearchSortDirectionInput "asc") ] [ text "Aufsteigend" ]
+                [ select [ onInput (Input SearchSortDirectionInput) ]
+                    [ option [ Html.Attributes.value "desc" ] [ text "Absteigend" ]
+                    , option [ Html.Attributes.value "asc" ] [ text "Aufsteigend" ]
                     ]
                 ]
             ]
         ]
 
 
+
+--, nutritionSettings : { kcalGoal : String, fatSplit : String, carbsSplit : String, proteinSplit : String }
+
+
 nutritionSettingsSection : Model -> Html Msg
 nutritionSettingsSection model =
-    div []
+    let
+        value =
+            Html.Attributes.value
+
+        min =
+            Html.Attributes.min
+
+        max =
+            Html.Attributes.max
+
+        n =
+            model.settings.nutritionSettings
+
+        notificationClass =
+            if
+                (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.fatSplit)
+                    + (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.carbsSplit)
+                        + Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.proteinSplit)
+                      )
+                )
+                    == 100
+            then
+                "notification is-primary"
+
+            else
+                "notification is-danger"
+    in
+    div [ class "box" ]
         [ h1 [ class "subtitle" ] [ text "Nährwerteinstellung" ]
         , div [ class "field" ]
-            [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
-            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.fatSplit ] []
-            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.carbsSplit] []
-            , input [ type_ "range", placeholder "Anzahl Suchergebnisse", Html.Attributes.value model.settings.nutritionSettings.proteinSplit ] []
-            , label [ class "label" ] [ text "Sortieren nach" ]
-            , div [ class "control" ]
-                [ div [ class "select is-primary" ]
-                    [ select []
-                        [ option [ onClick (Input SearchSortInput "calories") ] [ text "Kalorien" ]
-                        , option [ onClick (Input SearchSortInput "total-fat") ] [ text "Fett" ]
-                        , option [ onClick (Input SearchSortInput "carbs") ] [ text "Kohlenhydrate" ]
-                        , option [ onClick (Input SearchSortInput "protein") ] [ text "Eiweiß" ]
+            [ div []
+                [ div [ class notificationClass ]
+                    [ span [] [ text "Gesamt-%" ]
+                    , span []
+                        [ text
+                            (String.fromInt
+                                (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.fatSplit)
+                                    + (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.carbsSplit)
+                                        + Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.proteinSplit)
+                                      )
+                                )
+                                ++ "%"
+                            )
                         ]
+                    , span [] [ text "Die Makronährstoffe müssen gleich 100% sein" ]
                     ]
-                ]
-            ]
-        , label [ class "label" ] [ text "Sortierungsreihenfolge" ]
-        , div [ class "control" ]
-            [ div [ class "select is-primary" ]
-                [ select []
-                    [ option [ onClick (Input SearchSortDirectionInput "desc") ] [ text "Absteigend" ]
-                    , option [ onClick (Input SearchSortDirectionInput "asc") ] [ text "Aufsteigend" ]
+                , label [ class "label" ] [ text "Fettanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.fatSplit
+                    , onInput (Input FatSliderInput)
                     ]
+                    []
+                , span
+                    [ class "tag is-primary is-light"
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.fatSplit ++ "%") ]
                 ]
+            , div []
+                [ label [ class "label" ] [ text "Kohlenhydrateanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.carbsSplit
+                    , onInput (Input CarbsSliderInput)
+                    ]
+                    []
+                , span
+                    [ class "tag is-light is-primary "
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.carbsSplit ++ "%") ]
+                ]
+            , div []
+                [ label [ class "label" ] [ text "Eiweißanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.proteinSplit
+                    , onInput (Input ProteinSliderInput)
+                    ]
+                    []
+                , span
+                    [ class "tag is-primary is-light"
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.proteinSplit ++ "%") ]
+                ]
+            , label [ class "label" ] [ text "Kalorienziel" ]
+            , input [ class "input is-primary", type_ "number", placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
             ]
         ]
 
@@ -740,7 +895,6 @@ setNutrition food =
     }
 
 
-setSearchSettings : Settings -> String -> String -> Settings
 setSearchSettings settings settingsType value =
     let
         s =
@@ -755,6 +909,57 @@ setSearchSettings settings settingsType value =
 
         "direction" ->
             { settings | searchSettings = { number = s.number, sort = s.sort, sortDirection = value } }
+
+        _ ->
+            settings
+
+
+setNutritionSettings : Settings -> String -> String -> Settings
+setNutritionSettings settings settingsType value =
+    let
+        s =
+            settings.nutritionSettings
+    in
+    case settingsType of
+        "kcal" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = value
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "fat" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = value
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "carbs" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = value
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "protein" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = value
+                    }
+            }
 
         _ ->
             settings
