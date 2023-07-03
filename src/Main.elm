@@ -1,16 +1,24 @@
 module Main exposing (main, view)
 
+import Array exposing (Array)
 import Browser
 import Browser.Navigation as Nav
+import Color exposing (Color)
 import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, h3, header, img, input, label, nav, option, p, section, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_, value)
+import Html.Attributes exposing (class, href, id, min, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (index)
 import List exposing (append, drop, indexedMap, length, map, map2, range, take)
+import Path
 import Round
+import Shape exposing (defaultPieConfig)
 import Svg.Attributes exposing (offset, style)
 import Time
+import TypedSvg exposing (circle, g, path, polygon, rect, svg, text_)
+import TypedSvg.Attributes exposing (cx, cy, d, dy, fill, fillOpacity, height, opacity, points, r, stroke, strokeWidth, textAnchor, transform, viewBox, width, x, y)
+import TypedSvg.Core exposing (Svg)
+import TypedSvg.Types exposing (AnchorAlignment(..), Paint(..), Transform(..), em, px)
 import Url
 
 
@@ -102,11 +110,6 @@ type alias Settings =
 
 
 
-{- type Slider
-   = FatSlider
-   | CarbsSlider
-   | ProteinSlider
--}
 --- Food ----
 
 
@@ -143,9 +146,9 @@ init flags url key =
       , modal = Nothing
       , popUp = Nothing
       , foods = []
-      , currNutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 }
+      , currNutrition = { kcal = 0.001, protein = 0.001, fat = 0.001, carbs = 0.001 }
       , searchTerm = ""
-      , response = [ { name = "banana", id = 123, img = "banana.png" } ]
+      , response = []
       , selectedFood = { name = "", id = 0, img = "", amount = 1.0, nutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 } }
       , errorMsg = ""
       , settings =
@@ -211,8 +214,15 @@ update msg model =
             )
 
         Tick newTime ->
-            (  { model | counter = model.counter - 1, popUp =  if model.counter >= 0 then Just FoodAdded else Nothing
-                } 
+            ( { model
+                | counter = model.counter - 1
+                , popUp =
+                    if model.counter >= 0 then
+                        Just FoodAdded
+
+                    else
+                        Nothing
+              }
             , Cmd.none
             )
 
@@ -302,7 +312,25 @@ updateFood : FoodMsg -> Model -> ( Model, Cmd Msg )
 updateFood foodMsg model =
     case foodMsg of
         DeleteFood i ->
-            ( { model | foods = append (take i model.foods) (drop (i + 1) model.foods) }, Cmd.none )
+            let
+                newFoods =
+                    append (take i model.foods) (drop (i + 1) model.foods)
+            in
+            if length model.foods == 1 then
+                ( { model
+                    | foods = []
+                    , currNutrition = { kcal = 0.001, protein = 0.001, fat = 0.001, carbs = 0.001 }
+                  }
+                , Cmd.none
+                )
+
+            else
+                ( { model
+                    | foods = newFoods
+                    , currNutrition = updateCurrNutrition newFoods
+                  }
+                , Cmd.none
+                )
 
         GetFoods food ->
             ( model
@@ -334,18 +362,15 @@ updateFood foodMsg model =
             ( let
                 food =
                     setNutrition model.selectedFood
-              in
-              { model
-                | foods =
+
+                newFoods =
                     List.append model.foods
                         [ setNutrition food
                         ]
-                , currNutrition =
-                    { kcal = model.currNutrition.kcal + food.nutrition.kcal
-                    , protein = model.currNutrition.protein + food.nutrition.protein
-                    , fat = model.currNutrition.fat + food.nutrition.fat
-                    , carbs = model.currNutrition.carbs + food.nutrition.carbs
-                    }
+              in
+              { model
+                | foods = newFoods
+                , currNutrition = updateCurrNutrition newFoods
                 , modal = Nothing
                 , popUp = Just FoodAdded
                 , counter = 3
@@ -359,14 +384,21 @@ updateFood foodMsg model =
                 { method = "GET"
                 , headers = []
                 , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1&apiKey=a25e9078614b4a79948065747e2cc8cf"
-
-                {- , url = "../json/foodData.json" -}
                 , body = Http.emptyBody
                 , expect = Http.expectJson GotFoodData foodDecoder
                 , timeout = Nothing
                 , tracker = Nothing
                 }
             )
+
+
+updateCurrNutrition : List Food -> Nutrition
+updateCurrNutrition foods =
+    { kcal = List.sum (List.map (\food -> food.nutrition.kcal) foods)
+    , protein = List.sum (List.map (\food -> food.nutrition.protein) foods)
+    , fat = List.sum (List.map (\food -> food.nutrition.fat) foods)
+    , carbs = List.sum (List.map (\food -> food.nutrition.carbs) foods)
+    }
 
 
 type ModalMsg
@@ -397,12 +429,11 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "MyApp"
+    { title = "Nutri Tracker 23"
     , body =
         [ div []
             [ navbar model
             , pageContent model
-            , button [ onClick TogglePopUp ] [ text "toggle" ]
             , popup model
             ]
         ]
@@ -413,8 +444,8 @@ navbar : Model -> Html Msg
 navbar model =
     nav [ class "navbar is-primary" ]
         [ div [ class "navbar-brand" ]
-            [ a [ class "navbar-item" ]
-                [ h1 [ class "tile" ] [ text "Nutritiontracker" ]
+            [ a [ class "navbar-item", href "#home" ]
+                [ h1 [ class "tile" ] [ img [ src "/src/NutriTrack23.svg" ] [] ]
                 ]
             ]
         , div [ class "navbar-menu" ]
@@ -433,11 +464,172 @@ pageContent : Model -> Html Msg
 pageContent model =
     case model.page of
         Home ->
-            section [ class "section" ] [ h1 [] [ text "Home" ] ]
+            let
+                nS =
+                    model.settings.nutritionSettings
+
+                fat =
+                    (Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) / 9.0) * (Maybe.withDefault 30 (String.toFloat nS.fatSplit) / 100)
+
+                carbs =
+                    (Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) / 4.0) * (Maybe.withDefault 30 (String.toFloat nS.carbsSplit) / 100)
+
+                protein =
+                    (Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) / 4.0) * (Maybe.withDefault 30 (String.toFloat nS.proteinSplit) / 100)
+            in
+            section [ class "section" ]
+                [ nav [ class "level" ]
+                    [ div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Kalorien" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.kcal ++ " kcal") ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Fett" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.fat ++ " g") ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Kohlenhydrate" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.carbs ++ " g") ]
+                            ]
+                        ]
+                    , div [ class "level-item has-text-centered" ]
+                        [ div []
+                            [ p [ class "heading" ] [ text "Eiweiß" ]
+                            , p [ class "title" ] [ text (Round.round 2 model.currNutrition.protein ++ " g") ]
+                            ]
+                        ]
+                    ]
+                , div [ style "display: flex; align-items: center;" ]
+                    [ span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "max-width: 500px; margin:auto;" ]
+                            [ if model.currNutrition.kcal <= Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) then
+                                foodChart
+                                    [ ( "noch " ++ (Round.round 2 (Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) - model.currNutrition.kcal) ++ " kcal"), model.currNutrition.kcal )
+                                    , ( "", Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) - model.currNutrition.kcal )
+                                    ]
+                                    { innerRadius = 80, corner = 10, position = 0 }
+                                    (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+
+                              else
+                                foodChart
+                                    [ ( Round.round 2 (model.currNutrition.kcal - Maybe.withDefault 2000 (String.toFloat nS.kcalGoal)) ++ " kcal zu viel", model.currNutrition.kcal - Maybe.withDefault 2000 (String.toFloat nS.kcalGoal) )
+                                    , ( "", (Maybe.withDefault 4000 (String.toFloat nS.kcalGoal) * 2.0) - model.currNutrition.kcal )
+                                    ]
+                                    { innerRadius = 80, corner = 10, position = 0 }
+                                    (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                            ]
+                        ]
+                    , span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "max-width: 500px; margin:auto;" ]
+                            [ foodChart
+                                [ ( "", model.currNutrition.protein )
+                                , ( "", model.currNutrition.carbs )
+                                , ( "", model.currNutrition.fat )
+                                ]
+                                { innerRadius = 0, corner = 0, position = 50 }
+                                (Array.fromList [ Color.rgb255 0 209 178, Color.rgb255 0 158 134, Color.rgb255 0 107 90 ])
+                            ]
+                        ]
+                    , span [ style "display: inline-block; width: 33%; padding: 0em 2em 0em;" ]
+                        [ div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #006b5a; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Fett" ]
+                                    , if model.currNutrition.fat <= fat then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (fat - model.currNutrition.fat) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.fat - fat) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.fat <= fat then
+                                    foodChart
+                                        [ ( "", model.currNutrition.fat )
+                                        , ( "", fat - model.currNutrition.fat )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 107 90, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.fat - fat )
+                                        , ( "", fat * 2.0 - model.currNutrition.fat )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 107 90 ])
+                                ]
+                            ]
+                        , div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #009e86; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Kohlenhydrate" ]
+                                    , if model.currNutrition.carbs <= carbs then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (carbs - model.currNutrition.carbs) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.carbs - carbs) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.carbs <= carbs then
+                                    foodChart
+                                        [ ( "", model.currNutrition.carbs )
+                                        , ( "", carbs - model.currNutrition.carbs )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 158 134, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.carbs - carbs )
+                                        , ( "", carbs * 2.0 - model.currNutrition.carbs )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 158 134 ])
+                                ]
+                            ]
+                        , div [ style "display: flex; align-items: center;" ]
+                            [ span [ style "display: inline-block; width: auto; margin-right: 0.5em;" ]
+                                [ div [ class "tags has-addons" ]
+                                    [ span [ class "tag", style "background-color: #00d1b2; color: #ebf3fc; font-size: 1.2vw;" ] [ text "Eiweiss" ]
+                                    , if model.currNutrition.protein <= protein then
+                                        span [ class "tag", style "background-color: #cedbea; font-size: 1.2vw;" ] [ text ("noch " ++ Round.round 2 (protein - model.currNutrition.protein) ++ " g") ]
+
+                                      else
+                                        span [ class "tag", style "background-color: #d35646; font-size: 1.2vw;" ] [ text (Round.round 2 (model.currNutrition.protein - protein) ++ " g zu viel") ]
+                                    ]
+                                ]
+                            , span [ style "display: inline-block; width: 15%;" ]
+                                [ if model.currNutrition.protein <= protein then
+                                    foodChart
+                                        [ ( "", model.currNutrition.protein )
+                                        , ( "", protein - model.currNutrition.protein )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 0 209 178, Color.rgb255 206 219 234 ])
+
+                                  else
+                                    foodChart
+                                        [ ( "", model.currNutrition.protein - protein )
+                                        , ( "", protein * 2.0 - model.currNutrition.protein )
+                                        ]
+                                        { innerRadius = 60, corner = 10, position = 0 }
+                                        (Array.fromList [ Color.rgb255 211 86 70, Color.rgb255 0 209 178 ])
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
 
         Liste ->
             section [ class "section" ]
-                [ foodTable model
+                [ div [ class "container" ] [ foodTable model ]
                 ]
 
         Suche ->
@@ -518,7 +710,7 @@ showFoodModal food =
                             [ figure [ class "tile is-child image is-128x128" ]
                                 [ img [ src ("https://spoonacular.com/cdn/ingredients_100x100/" ++ food.img) ] []
                                 ]
-                            , input [ class "tile is-child input", type_ "number", onInput (Input FoodAmountInput) ] []
+                            , input [ class "tile is-child input", type_ "number", Html.Attributes.min "0", onInput (Input FoodAmountInput) ] []
                             ]
                         , div [ class "tile is-parent is-vertical" ]
                             [ h1 [ class "tile is-child title is-4", Html.Attributes.style "width" "100%" ] [ text "Nährwerte" ]
@@ -538,6 +730,48 @@ showFoodModal food =
                 ]
             ]
         , modalFooter []
+        ]
+
+
+
+--Chart
+
+
+type alias ChartSettings =
+    { innerRadius : Float, corner : Float, position : Float }
+
+
+pieSlice : ChartSettings -> Array Color -> Int -> Shape.Arc -> Svg msg
+pieSlice settings colors index datum =
+    Path.element (Shape.arc { datum | innerRadius = settings.innerRadius, cornerRadius = settings.corner }) [ fill <| Paint <| Maybe.withDefault Color.black <| Array.get index colors, stroke <| Paint Color.white ]
+
+
+pieLabel : ChartSettings -> Shape.Arc -> ( String, Float ) -> Svg msg
+pieLabel settings slice ( label, _ ) =
+    let
+        ( x, y ) =
+            Shape.centroid { slice | innerRadius = settings.position, outerRadius = settings.position }
+    in
+    text_
+        [ transform [ Translate x y ]
+        , dy (em 0.25)
+        , textAnchor AnchorMiddle
+        , fill <| Paint <| Color.black
+        ]
+        [ text label ]
+
+
+foodChart : List ( String, Float ) -> ChartSettings -> Array Color -> Svg msg
+foodChart model settings colors =
+    let
+        pieData =
+            model |> List.map Tuple.second |> Shape.pie { defaultPieConfig | outerRadius = 100 }
+    in
+    svg [ viewBox 0 0 200 200 ]
+        [ g [ transform [ Translate 100 100 ] ]
+            [ g [] <| List.indexedMap (pieSlice settings colors) pieData
+            , g [] <| List.map2 (pieLabel settings) pieData model
+            ]
         ]
 
 
@@ -709,22 +943,31 @@ type TableType
 
 foodTable : Model -> Html Msg
 foodTable model =
-    div [ class "table-container" ]
-        [ table [ class "table is-striped is-hoverable" ]
-            [ thead []
-                [ tr []
-                    [ th [ class "thead" ] [ text "Name" ]
-                    , th [ class "thead" ] [ text "Menge" ]
-                    , th [ class "thead" ] [ text "Kalorien" ]
-                    , th [ class "thead" ] [ text "Kohlenhydrate" ]
-                    , th [ class "thead" ] [ text "Fett" ]
-                    , th [ class "thead" ] [ text "Eiweiß" ]
-                    , th [ class "thead" ] []
-                    ]
+    if length model.foods == 0 then
+        div []
+            [ div [] [h1 [ class "subtitle", style "text-align: center;" ]
+                [ text "Noch kein Eintrag hinzugefügt."
+                ], div [Html.Attributes.style "display" "flex", Html.Attributes.style "justify-content" "center"] [img [class "image", src "/src/Ente.svg", Html.Attributes.style "height" "750px",Html.Attributes.style "width" "500px" ] []]
                 ]
-            , tbody [] (foodToListTable model.foods FoodsList)
             ]
-        ]
+
+    else
+        div [ class "table-container" ]
+            [ table [ class "table is-striped is-hoverable", Html.Attributes.style "width" "100%" ]
+                [ thead []
+                    [ tr []
+                        [ th [ class "thead" ] [ text "Name" ]
+                        , th [ class "thead" ] [ text "Menge" ]
+                        , th [ class "thead" ] [ text "Kalorien" ]
+                        , th [ class "thead" ] [ text "Kohlenhydrate" ]
+                        , th [ class "thead" ] [ text "Fett" ]
+                        , th [ class "thead" ] [ text "Eiweiß" ]
+                        , th [ class "thead" ] []
+                        ]
+                    ]
+                , tbody [] (foodToListTable model.foods FoodsList)
+                ]
+            ]
 
 
 searchResultsTable : Model -> Html Msg
