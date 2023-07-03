@@ -1,25 +1,37 @@
 module Main exposing (main, view)
 
---import Http
---import Json.Decode exposing (Decoder, andThen, field, int, list, map, map2, map3, map4, string)
---import String
---import Svg
---import Svg.Attributes as SvgAttr
---import Svg.Events
-
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, header, img, input, nav, p, section, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, href, id, placeholder, src, type_)
+import Html exposing (Attribute, Html, a, button, div, figure, footer, h1, h3, header, img, input, label, nav, option, p, section, select, span, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (class, href, id, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (index)
 import List exposing (append, drop, indexedMap, length, map, map2, range, take)
+import Round
 import Svg.Attributes exposing (offset, style)
+import Time
 import Url
 
 
-main : Program () { key : Nav.Key, url : Url.Url, page : Page, modal : Maybe ModalState, foods : List Food, searchTerm : String, response : List Ingredient, errorMsg : String } Msg
+main :
+    Program
+        ()
+        { key : Nav.Key
+        , url : Url.Url
+        , counter : Int
+        , page : Page
+        , modal : Maybe ModalState
+        , popUp : Maybe PopupState
+        , foods : List Food
+        , currNutrition : Nutrition
+        , searchTerm : String
+        , response : List Ingredient
+        , selectedFood : Food
+        , errorMsg : String
+        , settings : Settings
+        }
+        Msg
 main =
     Browser.application
         { init = init
@@ -34,23 +46,68 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
+    , counter : Int
     , page : Page
     , modal : Maybe ModalState
+    , popUp : Maybe PopupState
     , foods : List Food
+    , currNutrition : Nutrition
     , searchTerm : String
     , response : List Ingredient
+    , selectedFood : Food
     , errorMsg : String
+    , settings : Settings
     }
+
+
+
+---UtilTypes---
 
 
 type Page
     = Home
     | Liste
     | Suche
+    | Einstellungen
 
 
 type ModalState
     = ShowFood Food
+
+
+type PopupState
+    = FoodAdded
+
+
+type Input
+    = SearchInput
+    | FoodAmountInput
+    | SearchNumberInput
+    | SearchSortInput
+    | SearchSortDirectionInput
+    | KcalInput
+    | FatSliderInput
+    | CarbsSliderInput
+    | ProteinSliderInput
+
+
+
+--- Settings ---
+
+
+type alias Settings =
+    { searchSettings : { number : String, sort : String, sortDirection : String }
+    , nutritionSettings : { kcalGoal : String, fatSplit : String, carbsSplit : String, proteinSplit : String }
+    }
+
+
+
+{- type Slider
+   = FatSlider
+   | CarbsSlider
+   | ProteinSlider
+-}
+--- Food ----
 
 
 type alias Food =
@@ -73,20 +130,33 @@ type alias Ingredient =
     { name : String, id : Int, img : String }
 
 
+
+--- init ---
+
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { key = key
       , url = url
+      , counter = 0
       , page = Home
       , modal = Nothing
-      , foods =
-            [ { name = "Ei", id = 1, img = "", amount = 200.0, nutrition = { kcal = 200.0, protein = 200.0, fat = 200.0, carbs = 200.0 } }
-            , { name = "Brot", id = 2, img = "", amount = 100.0, nutrition = { kcal = 100.0, protein = 100.0, fat = 100.0, carbs = 100.0 } }
-            , { name = "Arne", id = 3, img = "", amount = 100.0, nutrition = { kcal = 100.0, protein = 100.0, fat = 100.0, carbs = 100.0 } }
-            ]
+      , popUp = Nothing
+      , foods = []
+      , currNutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 }
       , searchTerm = ""
       , response = [ { name = "banana", id = 123, img = "banana.png" } ]
+      , selectedFood = { name = "", id = 0, img = "", amount = 1.0, nutrition = { kcal = 0.0, protein = 0.0, fat = 0.0, carbs = 0.0 } }
       , errorMsg = ""
+      , settings =
+            { searchSettings = { number = "10", sort = "protein", sortDirection = "desc" }
+            , nutritionSettings =
+                { kcalGoal = "2000"
+                , fatSplit = "30"
+                , carbsSplit = "30"
+                , proteinSplit = "40"
+                }
+            }
       }
     , Cmd.none
     )
@@ -95,12 +165,14 @@ init flags url key =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | Tick Time.Posix
     | OpenModal ModalMsg
     | CloseModal
+    | TogglePopUp
     | ChangeFoods FoodMsg
     | GotFoods (Result Http.Error HTTPSearchResults)
     | GotFoodData (Result Http.Error Food)
-    | Input String
+    | Input Input String
     | KeyDown Int
 
 
@@ -129,9 +201,18 @@ update msg model =
                         Just "search" ->
                             Suche
 
+                        Just "settings" ->
+                            Einstellungen
+
                         _ ->
                             Home
               }
+            , Cmd.none
+            )
+
+        Tick newTime ->
+            (  { model | counter = model.counter - 1, popUp =  if model.counter >= 0 then Just FoodAdded else Nothing
+                } 
             , Cmd.none
             )
 
@@ -140,6 +221,14 @@ update msg model =
 
         CloseModal ->
             ( { model | modal = Nothing }, Cmd.none )
+
+        TogglePopUp ->
+            ( { model
+                | popUp = Just FoodAdded
+                , counter = 5
+              }
+            , Cmd.none
+            )
 
         ChangeFoods foodMsg ->
             updateFood foodMsg model
@@ -155,13 +244,44 @@ update msg model =
         GotFoodData httpResponse ->
             case httpResponse of
                 Ok result ->
-                    ( {model | modal = Just (ShowFood result)}, Cmd.none  )
+                    ( { model
+                        | selectedFood = result
+                        , modal = Just (ShowFood result)
+                      }
+                    , Cmd.none
+                    )
 
                 Err _ ->
                     ( { model | errorMsg = "Informationen werden nicht abgeholt" }, Cmd.none )
 
-        Input input ->
-            ( { model | searchTerm = input }, Cmd.none )
+        Input inputType input ->
+            case inputType of
+                SearchInput ->
+                    ( { model | searchTerm = input }, Cmd.none )
+
+                FoodAmountInput ->
+                    ( { model | selectedFood = setAmount model.selectedFood input }, Cmd.none )
+
+                SearchNumberInput ->
+                    ( { model | settings = setSearchSettings model.settings "number" input }, Cmd.none )
+
+                SearchSortInput ->
+                    ( { model | settings = setSearchSettings model.settings "sort" input }, Cmd.none )
+
+                SearchSortDirectionInput ->
+                    ( { model | settings = setSearchSettings model.settings "direction" input }, Cmd.none )
+
+                KcalInput ->
+                    ( { model | settings = setNutritionSettings model.settings "kcal" input }, Cmd.none )
+
+                FatSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "fat" input }, Cmd.none )
+
+                CarbsSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "carbs" input }, Cmd.none )
+
+                ProteinSliderInput ->
+                    ( { model | settings = setNutritionSettings model.settings "protein" input }, Cmd.none )
 
         KeyDown key ->
             if key == 13 then
@@ -173,7 +293,8 @@ update msg model =
 
 type FoodMsg
     = GetFoods String
-    | GetFoodData String
+    | GetFoodData Food String
+    | AddFood
     | DeleteFood Int
 
 
@@ -188,7 +309,20 @@ updateFood foodMsg model =
             , Http.request
                 { method = "GET"
                 , headers = []
-                , url = "https://api.spoonacular.com/food/ingredients/search?query=" ++ food ++ "&number=10&sort=calories&sortDirection=desc&apiKey=a25e9078614b4a79948065747e2cc8cf"
+                , url =
+                    let
+                        settings =
+                            model.settings.searchSettings
+                    in
+                    "https://api.spoonacular.com/food/ingredients/search?query="
+                        ++ food
+                        ++ "&number="
+                        ++ settings.number
+                        ++ "&sort="
+                        ++ settings.sort
+                        ++ "&sortDirection="
+                        ++ settings.sortDirection
+                        ++ "&apiKey=a25e9078614b4a79948065747e2cc8cf"
                 , body = Http.emptyBody
                 , expect = Http.expectJson GotFoods resultDecoder
                 , timeout = Nothing
@@ -196,14 +330,37 @@ updateFood foodMsg model =
                 }
             )
 
-        GetFoodData id ->
-            ( model
+        AddFood ->
+            ( let
+                food =
+                    setNutrition model.selectedFood
+              in
+              { model
+                | foods =
+                    List.append model.foods
+                        [ setNutrition food
+                        ]
+                , currNutrition =
+                    { kcal = model.currNutrition.kcal + food.nutrition.kcal
+                    , protein = model.currNutrition.protein + food.nutrition.protein
+                    , fat = model.currNutrition.fat + food.nutrition.fat
+                    , carbs = model.currNutrition.carbs + food.nutrition.carbs
+                    }
+                , modal = Nothing
+                , popUp = Just FoodAdded
+                , counter = 3
+              }
+            , Cmd.none
+            )
+
+        GetFoodData food id ->
+            ( { model | modal = Just (ShowFood food) }
             , Http.request
                 { method = "GET"
                 , headers = []
+                , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1&apiKey=a25e9078614b4a79948065747e2cc8cf"
 
-                {- , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1" -}
-                , url = "../json/foodData.json"
+                {- , url = "../json/foodData.json" -}
                 , body = Http.emptyBody
                 , expect = Http.expectJson GotFoodData foodDecoder
                 , timeout = Nothing
@@ -221,17 +378,7 @@ updateModal modalMsg model =
     case modalMsg of
         OpenFood food id ->
             ( { model | modal = Just (ShowFood food) }
-            , Http.request
-                { method = "GET"
-                , headers = []
-
-                {- , url = "https://api.spoonacular.com/food/ingredients/" ++ id ++ "/information?amount=1" -}
-                , url = "../json/foodData.json"
-                , body = Http.emptyBody
-                , expect = Http.expectJson GotFoodData foodDecoder
-                , timeout = Nothing
-                , tracker = Nothing
-                }
+            , Cmd.none
             )
 
 
@@ -241,7 +388,7 @@ updateModal modalMsg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Time.every 1000 Tick
 
 
 
@@ -255,6 +402,8 @@ view model =
         [ div []
             [ navbar model
             , pageContent model
+            , button [ onClick TogglePopUp ] [ text "toggle" ]
+            , popup model
             ]
         ]
     }
@@ -265,7 +414,7 @@ navbar model =
     nav [ class "navbar is-primary" ]
         [ div [ class "navbar-brand" ]
             [ a [ class "navbar-item" ]
-                [ h1 [ class "tile" ] [ text "Kalorientracker" ]
+                [ h1 [ class "tile" ] [ text "Nutritiontracker" ]
                 ]
             ]
         , div [ class "navbar-menu" ]
@@ -274,6 +423,8 @@ navbar model =
                 , a [ class "navbar-item", href "#search" ] [ text "Suche" ]
                 , a [ class "navbar-item", href "#list" ] [ text "Liste" ]
                 ]
+            , div [ class "navbar-end" ]
+                [ a [ class "navbar-item", href "#settings" ] [ span [ class "icon" ] [ Html.i [ class "fas fa-cog" ] [] ] ] ]
             ]
         ]
 
@@ -293,17 +444,37 @@ pageContent model =
             section [ class "section" ]
                 [ div [ class "container" ]
                     [ div [ class "field has-addons" ]
-                        [ div [ class "control" ] [ input [ class "input", type_ "text", placeholder "Suchen...", onInput Input, onKeyDown KeyDown, Html.Attributes.style "width" "75em" ] [] ]
+                        [ div [ class "control" ] [ input [ class "input", type_ "text", placeholder "Suchen...", onInput (Input SearchInput), onKeyDown KeyDown, Html.Attributes.style "width" "75em" ] [] ]
                         , div [ class "control" ] [ button [ class "button is-primary", onClick (ChangeFoods (GetFoods model.searchTerm)) ] [ text "Suchen" ] ]
                         ]
                     , searchResultsTable model
-                    , viewModal model
+                    , modalView model
                     ]
                 ]
 
+        Einstellungen ->
+            section [ class "section" ] [ settingsView model ]
 
-viewModal : Model -> Html Msg
-viewModal model =
+
+popup : Model -> Html Msg
+popup model =
+    div
+        [ Html.Attributes.class
+            (if model.popUp == Just FoodAdded && model.counter > 0 then
+                "animate__animated animate__bounce showSnackbar box"
+
+             else
+                "animate__animated animate__bounce snackbar box "
+            )
+        ]
+        [ div
+            []
+            [ text "Eintrag hinzugefügt" ]
+        ]
+
+
+modalView : Model -> Html Msg
+modalView model =
     case model.modal of
         Nothing ->
             span [] []
@@ -329,7 +500,8 @@ modalFooter : List (Html Msg) -> Html Msg
 modalFooter modalButtons =
     footer [ class "modal-card-foot" ]
         (modalButtons
-            ++ [ button [ class "button is-primary", onClick CloseModal ] [ text "Schließen" ]
+            ++ [ button [ class "button is-primary", onClick (ChangeFoods AddFood) ] [ text "Hinzufügen" ]
+               , button [ class "button", onClick CloseModal ] [ text "Schließen" ]
                ]
         )
 
@@ -346,17 +518,17 @@ showFoodModal food =
                             [ figure [ class "tile is-child image is-128x128" ]
                                 [ img [ src ("https://spoonacular.com/cdn/ingredients_100x100/" ++ food.img) ] []
                                 ]
-                            , input [ class "tile is-child input", type_ "number", placeholder "Suchen...", onInput Input ] []
+                            , input [ class "tile is-child input", type_ "number", onInput (Input FoodAmountInput) ] []
                             ]
                         , div [ class "tile is-parent is-vertical" ]
                             [ h1 [ class "tile is-child title is-4", Html.Attributes.style "width" "100%" ] [ text "Nährwerte" ]
                             , div [ class "content" ]
                                 [ table []
                                     [ tbody []
-                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat food.nutrition.kcal) ] ]
-                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat food.nutrition.carbs) ] ]
-                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat food.nutrition.fat) ] ]
-                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat food.nutrition.protein) ] ]
+                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat (food.nutrition.kcal * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat (food.nutrition.carbs * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat (food.nutrition.fat * food.amount)) ] ]
+                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat (food.nutrition.protein * food.amount)) ] ]
                                         ]
                                     ]
                                 ]
@@ -366,6 +538,163 @@ showFoodModal food =
                 ]
             ]
         , modalFooter []
+        ]
+
+
+
+---settingsView---
+
+
+settingsView : Model -> Html Msg
+settingsView model =
+    div [ class "container" ]
+        [ searchSettingsSection model
+        , nutritionSettingsSection model
+        ]
+
+
+searchSettingsSection : Model -> Html Msg
+searchSettingsSection model =
+    div [ class "box" ]
+        [ h1 [ class "subtitle" ] [ text "Sucheinstellung" ]
+        , div [ class "field" ]
+            [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
+            , input [ class "input is-primary", type_ "number", placeholder "Anzahl Suchergebnisse", value model.settings.searchSettings.number, onInput (Input SearchNumberInput) ] []
+            , label [ class "label" ] [ text "Sortieren nach" ]
+            , div [ class "control" ]
+                [ div [ class "select is-primary" ]
+                    [ select [ onInput (Input SearchSortInput) ]
+                        [ option [ Html.Attributes.value "calories" ] [ text "Kalorien" ]
+                        , option [ Html.Attributes.value "total-fat" ] [ text "Fett" ]
+                        , option [ Html.Attributes.value "carbs" ] [ text "Kohlenhydrate" ]
+                        , option [ Html.Attributes.value "protein" ] [ text "Eiweiß" ]
+                        ]
+                    ]
+                ]
+            ]
+        , label [ class "label" ] [ text "Sortierungsreihenfolge" ]
+        , div [ class "control" ]
+            [ div [ class "select is-primary" ]
+                [ select [ onInput (Input SearchSortDirectionInput) ]
+                    [ option [ Html.Attributes.value "desc" ] [ text "Absteigend" ]
+                    , option [ Html.Attributes.value "asc" ] [ text "Aufsteigend" ]
+                    ]
+                ]
+            ]
+        ]
+
+
+
+--, nutritionSettings : { kcalGoal : String, fatSplit : String, carbsSplit : String, proteinSplit : String }
+
+
+nutritionSettingsSection : Model -> Html Msg
+nutritionSettingsSection model =
+    let
+        value =
+            Html.Attributes.value
+
+        min =
+            Html.Attributes.min
+
+        max =
+            Html.Attributes.max
+
+        n =
+            model.settings.nutritionSettings
+
+        notificationClass =
+            if
+                (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.fatSplit)
+                    + (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.carbsSplit)
+                        + Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.proteinSplit)
+                      )
+                )
+                    == 100
+            then
+                "notification is-primary"
+
+            else
+                "notification is-danger"
+    in
+    div [ class "box" ]
+        [ h1 [ class "subtitle" ] [ text "Nährwerteinstellung" ]
+        , div [ class "field" ]
+            [ div []
+                [ div [ class notificationClass ]
+                    [ span [] [ text "Gesamt-%" ]
+                    , span []
+                        [ text
+                            (String.fromInt
+                                (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.fatSplit)
+                                    + (Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.carbsSplit)
+                                        + Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.proteinSplit)
+                                      )
+                                )
+                                ++ "%"
+                            )
+                        ]
+                    , span [] [ text "Die Makronährstoffe müssen gleich 100% sein" ]
+                    ]
+                , label [ class "label" ] [ text "Fettanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.fatSplit
+                    , onInput (Input FatSliderInput)
+                    ]
+                    []
+                , span
+                    [ class "tag is-primary is-light"
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.fatSplit ++ "%") ]
+                ]
+            , div []
+                [ label [ class "label" ] [ text "Kohlenhydrateanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.carbsSplit
+                    , onInput (Input CarbsSliderInput)
+                    ]
+                    []
+                , span
+                    [ class "tag is-light is-primary "
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.carbsSplit ++ "%") ]
+                ]
+            , div []
+                [ label [ class "label" ] [ text "Eiweißanteil" ]
+                , input
+                    [ type_ "range"
+                    , class "slider"
+                    , placeholder "Anzahl Suchergebnisse"
+                    , min "0"
+                    , max "100"
+                    , value n.proteinSplit
+                    , onInput (Input ProteinSliderInput)
+                    ]
+                    []
+                , span
+                    [ class "tag is-primary is-light"
+                    , Html.Attributes.style "margin-left" "7.5px"
+                    , Html.Attributes.style "width" "35px"
+                    ]
+                    [ text (model.settings.nutritionSettings.proteinSplit ++ "%") ]
+                ]
+            , label [ class "label" ] [ text "Kalorienziel" ]
+            , input [ class "input is-primary", type_ "number", placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
+            ]
         ]
 
 
@@ -419,11 +748,11 @@ foodToListTable foods tableType =
                 (\i food ->
                     tr [ class "table-row-hover-background-color", id ("row" ++ String.fromInt i) ]
                         [ td [] [ text food.name ]
-                        , td [] [ text (String.fromFloat food.amount) ]
-                        , td [] [ text (String.fromFloat food.nutrition.kcal) ]
-                        , td [] [ text (String.fromFloat food.nutrition.carbs) ]
-                        , td [] [ text (String.fromFloat food.nutrition.fat) ]
-                        , td [] [ text (String.fromFloat food.nutrition.protein) ]
+                        , td [] [ text (Round.round 2 food.amount) ]
+                        , td [] [ text (Round.round 2 food.nutrition.kcal) ]
+                        , td [] [ text (Round.round 2 food.nutrition.carbs) ]
+                        , td [] [ text (Round.round 2 food.nutrition.fat) ]
+                        , td [] [ text (Round.round 2 food.nutrition.protein) ]
                         , td [] [ button [ class "delete", onClick (ChangeFoods (DeleteFood i)) ] [ text "löschen" ] ]
                         ]
                 )
@@ -443,7 +772,7 @@ foodToSearchResultTable : List Food -> List (Html Msg)
 foodToSearchResultTable foodList =
     List.indexedMap
         (\i ingredient ->
-            tr [ id ("row" ++ String.fromInt i), onClick (OpenModal (OpenFood ingredient 3)) ]
+            tr [ id ("row" ++ String.fromInt i), onClick (ChangeFoods (GetFoodData ingredient (String.fromInt ingredient.id))) ]
                 [ td [] [ text ingredient.name ]
                 ]
         )
@@ -547,3 +876,90 @@ ariaLabel value =
 onKeyDown : (Int -> msg) -> Attribute msg
 onKeyDown tagger =
     Html.Events.on "keydown" (Json.Decode.map tagger Html.Events.keyCode)
+
+
+setAmount : Food -> String -> Food
+setAmount food amount =
+    { food | amount = Maybe.withDefault 1.0 (String.toFloat amount) }
+
+
+setNutrition : Food -> Food
+setNutrition food =
+    { food
+        | nutrition =
+            { kcal = food.nutrition.kcal * food.amount
+            , protein = food.nutrition.protein * food.amount
+            , fat = food.nutrition.fat * food.amount
+            , carbs = food.nutrition.carbs * food.amount
+            }
+    }
+
+
+setSearchSettings settings settingsType value =
+    let
+        s =
+            settings.searchSettings
+    in
+    case settingsType of
+        "number" ->
+            { settings | searchSettings = { number = value, sort = s.sort, sortDirection = s.sortDirection } }
+
+        "sort" ->
+            { settings | searchSettings = { number = s.number, sort = value, sortDirection = s.sortDirection } }
+
+        "direction" ->
+            { settings | searchSettings = { number = s.number, sort = s.sort, sortDirection = value } }
+
+        _ ->
+            settings
+
+
+setNutritionSettings : Settings -> String -> String -> Settings
+setNutritionSettings settings settingsType value =
+    let
+        s =
+            settings.nutritionSettings
+    in
+    case settingsType of
+        "kcal" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = value
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "fat" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = value
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "carbs" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = value
+                    , proteinSplit = s.proteinSplit
+                    }
+            }
+
+        "protein" ->
+            { settings
+                | nutritionSettings =
+                    { kcalGoal = s.kcalGoal
+                    , fatSplit = s.fatSplit
+                    , carbsSplit = s.carbsSplit
+                    , proteinSplit = value
+                    }
+            }
+
+        _ ->
+            settings

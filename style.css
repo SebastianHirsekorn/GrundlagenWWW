@@ -1,0 +1,94 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+
+.slider {
+    -webkit-appearance: none;
+    width: 96%;
+    height: 15px;
+    border-radius: 5px;  
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%; 
+    background: #04AA6D;
+    cursor: pointer;
+  }
+  
+  .slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #00D1B2;
+    cursor: pointer;
+  }
+
+/* The snackbar - position it at the bottom and in the middle of the screen */
+.snackbar {
+  visibility: hidden; /* Show the snackbar */
+  width: 250px;
+  height: 50px;
+  padding: 15px 35px 15px 35px;
+  text-align: center; /* Centered text */
+  border-radius: 5px; /* Rounded borders */
+  position: absolute;
+  bottom: 30px;
+  right: 15px;
+  color: white;
+  background-color: #00D1B2;
+  overflow: hidden;
+  /* -webkit-animation: fadein 0.5s, fadeout 0.5s 4s;
+  animation: fadein 0.5s, fadeout 0.5s 4s; */
+}
+
+/* Show the snackbar when clicking on a button (class added with JavaScript) */
+.showSnackbar {
+  visibility: visible; /* Show the snackbar */
+  width: 250px;
+  height: 50px;
+  padding: 15px 35px 15px 35px;
+  text-align: center; /* Centered text */
+  border-radius: 5px; /* Rounded borders */
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  color: white;
+  background-color: #00D1B2;
+  /* -webkit-animation: fadein 0.5s, fadeout 0.5s 4s;
+  animation: fadein 0.5s, fadeout 0.5s 4s; */
+}
+
+/* Animations to fade the snackbar in and out */
+/* @-webkit-keyframes fadein {
+  from {right: 0; opacity: 0;}
+  to {right: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {right: 0; opacity: 0;}
+  to {right: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {right: 30px; opacity: 1;}
+  to {right: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {right: 30px; opacity: 1;}
+  to {right : 0; opacity: 0;}
+} */
+

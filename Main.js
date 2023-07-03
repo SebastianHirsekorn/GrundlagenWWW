@@ -4956,6 +4956,52 @@ function _Browser_load(url)
 
 
 
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2($elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = $elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = $elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
+
 // SEND REQUEST
 
 var _Http_toTask = F3(function(router, toTask, request)
@@ -10740,48 +10786,224 @@ var $author$project$Main$init = F3(
 	function (flags, url, key) {
 		return _Utils_Tuple2(
 			{
+				counter: 0,
+				currNutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0},
 				errorMsg: '',
-				foods: _List_fromArray(
-					[
-						{
-						amount: 200.0,
-						id: 1,
-						img: '',
-						name: 'Ei',
-						nutrition: {carbs: 200.0, fat: 200.0, kcal: 200.0, protein: 200.0}
-					},
-						{
-						amount: 100.0,
-						id: 2,
-						img: '',
-						name: 'Brot',
-						nutrition: {carbs: 100.0, fat: 100.0, kcal: 100.0, protein: 100.0}
-					},
-						{
-						amount: 100.0,
-						id: 3,
-						img: '',
-						name: 'Arne',
-						nutrition: {carbs: 100.0, fat: 100.0, kcal: 100.0, protein: 100.0}
-					}
-					]),
+				foods: _List_Nil,
 				key: key,
 				modal: $elm$core$Maybe$Nothing,
 				page: $author$project$Main$Home,
+				popUp: $elm$core$Maybe$Nothing,
 				response: _List_fromArray(
 					[
 						{id: 123, img: 'banana.png', name: 'banana'}
 					]),
 				searchTerm: '',
+				selectedFood: {
+					amount: 1.0,
+					id: 0,
+					img: '',
+					name: '',
+					nutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0}
+				},
+				settings: {
+					nutritionSettings: {carbsSplit: '30', fatSplit: '30', kcalGoal: '2000', proteinSplit: '40'},
+					searchSettings: {number: '10', sort: 'protein', sortDirection: 'desc'}
+				},
 				url: url
 			},
 			$elm$core$Platform$Cmd$none);
 	});
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $author$project$Main$subscriptions = function (model) {
-	return $elm$core$Platform$Sub$none;
+var $author$project$Main$Tick = function (a) {
+	return {$: 'Tick', a: a};
 };
+var $elm$time$Time$Every = F2(
+	function (a, b) {
+		return {$: 'Every', a: a, b: b};
+	});
+var $elm$time$Time$State = F2(
+	function (taggers, processes) {
+		return {processes: processes, taggers: taggers};
+	});
+var $elm$time$Time$init = $elm$core$Task$succeed(
+	A2($elm$time$Time$State, $elm$core$Dict$empty, $elm$core$Dict$empty));
+var $elm$time$Time$addMySub = F2(
+	function (_v0, state) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		var _v1 = A2($elm$core$Dict$get, interval, state);
+		if (_v1.$ === 'Nothing') {
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				_List_fromArray(
+					[tagger]),
+				state);
+		} else {
+			var taggers = _v1.a;
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				A2($elm$core$List$cons, tagger, taggers),
+				state);
+		}
+	});
+var $elm$core$Process$kill = _Scheduler_kill;
+var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
+var $elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var $elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var $elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$time$Time$setInterval = _Time_setInterval;
+var $elm$core$Process$spawn = _Scheduler_spawn;
+var $elm$time$Time$spawnHelp = F3(
+	function (router, intervals, processes) {
+		if (!intervals.b) {
+			return $elm$core$Task$succeed(processes);
+		} else {
+			var interval = intervals.a;
+			var rest = intervals.b;
+			var spawnTimer = $elm$core$Process$spawn(
+				A2(
+					$elm$time$Time$setInterval,
+					interval,
+					A2($elm$core$Platform$sendToSelf, router, interval)));
+			var spawnRest = function (id) {
+				return A3(
+					$elm$time$Time$spawnHelp,
+					router,
+					rest,
+					A3($elm$core$Dict$insert, interval, id, processes));
+			};
+			return A2($elm$core$Task$andThen, spawnRest, spawnTimer);
+		}
+	});
+var $elm$time$Time$onEffects = F3(
+	function (router, subs, _v0) {
+		var processes = _v0.processes;
+		var rightStep = F3(
+			function (_v6, id, _v7) {
+				var spawns = _v7.a;
+				var existing = _v7.b;
+				var kills = _v7.c;
+				return _Utils_Tuple3(
+					spawns,
+					existing,
+					A2(
+						$elm$core$Task$andThen,
+						function (_v5) {
+							return kills;
+						},
+						$elm$core$Process$kill(id)));
+			});
+		var newTaggers = A3($elm$core$List$foldl, $elm$time$Time$addMySub, $elm$core$Dict$empty, subs);
+		var leftStep = F3(
+			function (interval, taggers, _v4) {
+				var spawns = _v4.a;
+				var existing = _v4.b;
+				var kills = _v4.c;
+				return _Utils_Tuple3(
+					A2($elm$core$List$cons, interval, spawns),
+					existing,
+					kills);
+			});
+		var bothStep = F4(
+			function (interval, taggers, id, _v3) {
+				var spawns = _v3.a;
+				var existing = _v3.b;
+				var kills = _v3.c;
+				return _Utils_Tuple3(
+					spawns,
+					A3($elm$core$Dict$insert, interval, id, existing),
+					kills);
+			});
+		var _v1 = A6(
+			$elm$core$Dict$merge,
+			leftStep,
+			bothStep,
+			rightStep,
+			newTaggers,
+			processes,
+			_Utils_Tuple3(
+				_List_Nil,
+				$elm$core$Dict$empty,
+				$elm$core$Task$succeed(_Utils_Tuple0)));
+		var spawnList = _v1.a;
+		var existingDict = _v1.b;
+		var killTask = _v1.c;
+		return A2(
+			$elm$core$Task$andThen,
+			function (newProcesses) {
+				return $elm$core$Task$succeed(
+					A2($elm$time$Time$State, newTaggers, newProcesses));
+			},
+			A2(
+				$elm$core$Task$andThen,
+				function (_v2) {
+					return A3($elm$time$Time$spawnHelp, router, spawnList, existingDict);
+				},
+				killTask));
+	});
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
+var $elm$time$Time$onSelfMsg = F3(
+	function (router, interval, state) {
+		var _v0 = A2($elm$core$Dict$get, interval, state.taggers);
+		if (_v0.$ === 'Nothing') {
+			return $elm$core$Task$succeed(state);
+		} else {
+			var taggers = _v0.a;
+			var tellTaggers = function (time) {
+				return $elm$core$Task$sequence(
+					A2(
+						$elm$core$List$map,
+						function (tagger) {
+							return A2(
+								$elm$core$Platform$sendToApp,
+								router,
+								tagger(time));
+						},
+						taggers));
+			};
+			return A2(
+				$elm$core$Task$andThen,
+				function (_v1) {
+					return $elm$core$Task$succeed(state);
+				},
+				A2($elm$core$Task$andThen, tellTaggers, $elm$time$Time$now));
+		}
+	});
+var $elm$time$Time$subMap = F2(
+	function (f, _v0) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		return A2(
+			$elm$time$Time$Every,
+			interval,
+			A2($elm$core$Basics$composeL, f, tagger));
+	});
+_Platform_effectManagers['Time'] = _Platform_createManager($elm$time$Time$init, $elm$time$Time$onEffects, $elm$time$Time$onSelfMsg, 0, $elm$time$Time$subMap);
+var $elm$time$Time$subscription = _Platform_leaf('Time');
+var $elm$time$Time$every = F2(
+	function (interval, tagger) {
+		return $elm$time$Time$subscription(
+			A2($elm$time$Time$Every, interval, tagger));
+	});
+var $author$project$Main$subscriptions = function (model) {
+	return A2($elm$time$Time$every, 1000, $author$project$Main$Tick);
+};
+var $author$project$Main$Einstellungen = {$: 'Einstellungen'};
+var $author$project$Main$FoodAdded = {$: 'FoodAdded'};
 var $author$project$Main$GetFoods = function (a) {
 	return {$: 'GetFoods', a: a};
 };
@@ -10792,6 +11014,76 @@ var $author$project$Main$ShowFood = function (a) {
 var $author$project$Main$Suche = {$: 'Suche'};
 var $elm$browser$Browser$Navigation$load = _Browser_load;
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $elm$core$String$toFloat = _String_toFloat;
+var $author$project$Main$setAmount = F2(
+	function (food, amount) {
+		return _Utils_update(
+			food,
+			{
+				amount: A2(
+					$elm$core$Maybe$withDefault,
+					1.0,
+					$elm$core$String$toFloat(amount))
+			});
+	});
+var $author$project$Main$setNutritionSettings = F3(
+	function (settings, settingsType, value) {
+		var s = settings.nutritionSettings;
+		switch (settingsType) {
+			case 'kcal':
+				return _Utils_update(
+					settings,
+					{
+						nutritionSettings: {carbsSplit: s.carbsSplit, fatSplit: s.fatSplit, kcalGoal: value, proteinSplit: s.proteinSplit}
+					});
+			case 'fat':
+				return _Utils_update(
+					settings,
+					{
+						nutritionSettings: {carbsSplit: s.carbsSplit, fatSplit: value, kcalGoal: s.kcalGoal, proteinSplit: s.proteinSplit}
+					});
+			case 'carbs':
+				return _Utils_update(
+					settings,
+					{
+						nutritionSettings: {carbsSplit: value, fatSplit: s.fatSplit, kcalGoal: s.kcalGoal, proteinSplit: s.proteinSplit}
+					});
+			case 'protein':
+				return _Utils_update(
+					settings,
+					{
+						nutritionSettings: {carbsSplit: s.carbsSplit, fatSplit: s.fatSplit, kcalGoal: s.kcalGoal, proteinSplit: value}
+					});
+			default:
+				return settings;
+		}
+	});
+var $author$project$Main$setSearchSettings = F3(
+	function (settings, settingsType, value) {
+		var s = settings.searchSettings;
+		switch (settingsType) {
+			case 'number':
+				return _Utils_update(
+					settings,
+					{
+						searchSettings: {number: value, sort: s.sort, sortDirection: s.sortDirection}
+					});
+			case 'sort':
+				return _Utils_update(
+					settings,
+					{
+						searchSettings: {number: s.number, sort: value, sortDirection: s.sortDirection}
+					});
+			case 'direction':
+				return _Utils_update(
+					settings,
+					{
+						searchSettings: {number: s.number, sort: s.sort, sortDirection: value}
+					});
+			default:
+				return settings;
+		}
+	});
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -10868,7 +11160,6 @@ var $elm$core$Maybe$isJust = function (maybe) {
 		return false;
 	}
 };
-var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
 var $elm$http$Http$emptyBody = _Http_emptyBody;
 var $elm$http$Http$expectStringResponse = F2(
 	function (toMsg, toResult) {
@@ -11011,8 +11302,6 @@ var $elm$http$Http$State = F2(
 	});
 var $elm$http$Http$init = $elm$core$Task$succeed(
 	A2($elm$http$Http$State, $elm$core$Dict$empty, _List_Nil));
-var $elm$core$Process$kill = _Scheduler_kill;
-var $elm$core$Process$spawn = _Scheduler_spawn;
 var $elm$http$Http$updateReqs = F3(
 	function (router, cmds, reqs) {
 		updateReqs:
@@ -11177,6 +11466,13 @@ var $author$project$Main$resultDecoder = A5(
 	A2($elm$json$Json$Decode$field, 'offset', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'number', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'totalResults', $elm$json$Json$Decode$int));
+var $author$project$Main$setNutrition = function (food) {
+	return _Utils_update(
+		food,
+		{
+			nutrition: {carbs: food.nutrition.carbs * food.amount, fat: food.nutrition.fat * food.amount, kcal: food.nutrition.kcal * food.amount, protein: food.nutrition.protein * food.amount}
+		});
+};
 var $elm$core$List$takeReverse = F3(
 	function (n, list, kept) {
 		takeReverse:
@@ -11330,12 +11626,42 @@ var $author$project$Main$updateFood = F2(
 							method: 'GET',
 							timeout: $elm$core$Maybe$Nothing,
 							tracker: $elm$core$Maybe$Nothing,
-							url: 'https://api.spoonacular.com/food/ingredients/search?query=' + (food + '&number=10&sort=calories&sortDirection=desc&apiKey=a25e9078614b4a79948065747e2cc8cf')
+							url: function () {
+								var settings = model.settings.searchSettings;
+								return 'https://api.spoonacular.com/food/ingredients/search?query=' + (food + ('&number=' + (settings.number + ('&sort=' + (settings.sort + ('&sortDirection=' + (settings.sortDirection + '&apiKey=a25e9078614b4a79948065747e2cc8cf')))))));
+							}()
 						}));
-			default:
-				var id = foodMsg.a;
+			case 'AddFood':
 				return _Utils_Tuple2(
-					model,
+					function () {
+						var food = $author$project$Main$setNutrition(model.selectedFood);
+						return _Utils_update(
+							model,
+							{
+								counter: 3,
+								currNutrition: {carbs: model.currNutrition.carbs + food.nutrition.carbs, fat: model.currNutrition.fat + food.nutrition.fat, kcal: model.currNutrition.kcal + food.nutrition.kcal, protein: model.currNutrition.protein + food.nutrition.protein},
+								foods: A2(
+									$elm$core$List$append,
+									model.foods,
+									_List_fromArray(
+										[
+											$author$project$Main$setNutrition(food)
+										])),
+								modal: $elm$core$Maybe$Nothing,
+								popUp: $elm$core$Maybe$Just($author$project$Main$FoodAdded)
+							});
+					}(),
+					$elm$core$Platform$Cmd$none);
+			default:
+				var food = foodMsg.a;
+				var id = foodMsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							modal: $elm$core$Maybe$Just(
+								$author$project$Main$ShowFood(food))
+						}),
 					$elm$http$Http$request(
 						{
 							body: $elm$http$Http$emptyBody,
@@ -11344,7 +11670,7 @@ var $author$project$Main$updateFood = F2(
 							method: 'GET',
 							timeout: $elm$core$Maybe$Nothing,
 							tracker: $elm$core$Maybe$Nothing,
-							url: '../json/foodData.json'
+							url: 'https://api.spoonacular.com/food/ingredients/' + (id + '/information?amount=1&apiKey=a25e9078614b4a79948065747e2cc8cf')
 						}));
 		}
 	});
@@ -11359,16 +11685,7 @@ var $author$project$Main$updateModal = F2(
 					modal: $elm$core$Maybe$Just(
 						$author$project$Main$ShowFood(food))
 				}),
-			$elm$http$Http$request(
-				{
-					body: $elm$http$Http$emptyBody,
-					expect: A2($elm$http$Http$expectJson, $author$project$Main$GotFoodData, $author$project$Main$foodDecoder),
-					headers: _List_Nil,
-					method: 'GET',
-					timeout: $elm$core$Maybe$Nothing,
-					tracker: $elm$core$Maybe$Nothing,
-					url: '../json/foodData.json'
-				}));
+			$elm$core$Platform$Cmd$none);
 	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
@@ -11397,7 +11714,7 @@ var $author$project$Main$update = F2(
 						{
 							page: function () {
 								var _v2 = url.fragment;
-								_v2$3:
+								_v2$4:
 								while (true) {
 									if (_v2.$ === 'Just') {
 										switch (_v2.a) {
@@ -11407,16 +11724,28 @@ var $author$project$Main$update = F2(
 												return $author$project$Main$Liste;
 											case 'search':
 												return $author$project$Main$Suche;
+											case 'settings':
+												return $author$project$Main$Einstellungen;
 											default:
-												break _v2$3;
+												break _v2$4;
 										}
 									} else {
-										break _v2$3;
+										break _v2$4;
 									}
 								}
 								return $author$project$Main$Home;
 							}(),
 							url: url
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'Tick':
+				var newTime = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							counter: model.counter - 1,
+							popUp: (model.counter >= 0) ? $elm$core$Maybe$Just($author$project$Main$FoodAdded) : $elm$core$Maybe$Nothing
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'OpenModal':
@@ -11427,6 +11756,15 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{modal: $elm$core$Maybe$Nothing}),
+					$elm$core$Platform$Cmd$none);
+			case 'TogglePopUp':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							counter: 5,
+							popUp: $elm$core$Maybe$Just($author$project$Main$FoodAdded)
+						}),
 					$elm$core$Platform$Cmd$none);
 			case 'ChangeFoods':
 				var foodMsg = msg.a;
@@ -11456,7 +11794,8 @@ var $author$project$Main$update = F2(
 							model,
 							{
 								modal: $elm$core$Maybe$Just(
-									$author$project$Main$ShowFood(result))
+									$author$project$Main$ShowFood(result)),
+								selectedFood: result
 							}),
 						$elm$core$Platform$Cmd$none);
 				} else {
@@ -11467,12 +11806,80 @@ var $author$project$Main$update = F2(
 						$elm$core$Platform$Cmd$none);
 				}
 			case 'Input':
-				var input = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{searchTerm: input}),
-					$elm$core$Platform$Cmd$none);
+				var inputType = msg.a;
+				var input = msg.b;
+				switch (inputType.$) {
+					case 'SearchInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{searchTerm: input}),
+							$elm$core$Platform$Cmd$none);
+					case 'FoodAmountInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									selectedFood: A2($author$project$Main$setAmount, model.selectedFood, input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'SearchNumberInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setSearchSettings, model.settings, 'number', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'SearchSortInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setSearchSettings, model.settings, 'sort', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'SearchSortDirectionInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setSearchSettings, model.settings, 'direction', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'KcalInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setNutritionSettings, model.settings, 'kcal', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'FatSliderInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setNutritionSettings, model.settings, 'fat', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					case 'CarbsSliderInput':
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setNutritionSettings, model.settings, 'carbs', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+					default:
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									settings: A3($author$project$Main$setNutritionSettings, model.settings, 'protein', input)
+								}),
+							$elm$core$Platform$Cmd$none);
+				}
 			default:
 				var key = msg.a;
 				return (key === 13) ? A2(
@@ -11481,7 +11888,9 @@ var $author$project$Main$update = F2(
 					model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
+var $author$project$Main$TogglePopUp = {$: 'TogglePopUp'};
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$html$Html$i = _VirtualDom_node('i');
 var $elm$html$Html$nav = _VirtualDom_node('nav');
 var $author$project$Main$navbar = function (model) {
 	return A2(
@@ -11516,7 +11925,7 @@ var $author$project$Main$navbar = function (model) {
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Kalorientracker')
+										$elm$html$Html$text('Nutritiontracker')
 									]))
 							]))
 					])),
@@ -11569,6 +11978,41 @@ var $author$project$Main$navbar = function (model) {
 									[
 										$elm$html$Html$text('Liste')
 									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('navbar-end')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$a,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('navbar-item'),
+										$elm$html$Html$Attributes$href('#settings')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('icon')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$i,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('fas fa-cog')
+													]),
+												_List_Nil)
+											]))
+									]))
 							]))
 					]))
 			]));
@@ -11576,16 +12020,285 @@ var $author$project$Main$navbar = function (model) {
 var $author$project$Main$ChangeFoods = function (a) {
 	return {$: 'ChangeFoods', a: a};
 };
-var $author$project$Main$Input = function (a) {
-	return {$: 'Input', a: a};
-};
+var $author$project$Main$Input = F2(
+	function (a, b) {
+		return {$: 'Input', a: a, b: b};
+	});
 var $author$project$Main$KeyDown = function (a) {
 	return {$: 'KeyDown', a: a};
 };
+var $author$project$Main$SearchInput = {$: 'SearchInput'};
 var $author$project$Main$FoodsList = {$: 'FoodsList'};
 var $author$project$Main$DeleteFood = function (a) {
 	return {$: 'DeleteFood', a: a};
 };
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $myrho$elm_round$Round$addSign = F2(
+	function (signed, str) {
+		var isNotZero = A2(
+			$elm$core$List$any,
+			function (c) {
+				return (!_Utils_eq(
+					c,
+					_Utils_chr('0'))) && (!_Utils_eq(
+					c,
+					_Utils_chr('.')));
+			},
+			$elm$core$String$toList(str));
+		return _Utils_ap(
+			(signed && isNotZero) ? '-' : '',
+			str);
+	});
+var $elm$core$String$cons = _String_cons;
+var $elm$core$Char$fromCode = _Char_fromCode;
+var $myrho$elm_round$Round$increaseNum = function (_v0) {
+	var head = _v0.a;
+	var tail = _v0.b;
+	if (_Utils_eq(
+		head,
+		_Utils_chr('9'))) {
+		var _v1 = $elm$core$String$uncons(tail);
+		if (_v1.$ === 'Nothing') {
+			return '01';
+		} else {
+			var headtail = _v1.a;
+			return A2(
+				$elm$core$String$cons,
+				_Utils_chr('0'),
+				$myrho$elm_round$Round$increaseNum(headtail));
+		}
+	} else {
+		var c = $elm$core$Char$toCode(head);
+		return ((c >= 48) && (c < 57)) ? A2(
+			$elm$core$String$cons,
+			$elm$core$Char$fromCode(c + 1),
+			tail) : '0';
+	}
+};
+var $elm$core$Basics$isInfinite = _Basics_isInfinite;
+var $elm$core$Basics$isNaN = _Basics_isNaN;
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padRight = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			string,
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)));
+	});
+var $elm$core$String$reverse = _String_reverse;
+var $myrho$elm_round$Round$splitComma = function (str) {
+	var _v0 = A2($elm$core$String$split, '.', str);
+	if (_v0.b) {
+		if (_v0.b.b) {
+			var before = _v0.a;
+			var _v1 = _v0.b;
+			var after = _v1.a;
+			return _Utils_Tuple2(before, after);
+		} else {
+			var before = _v0.a;
+			return _Utils_Tuple2(before, '0');
+		}
+	} else {
+		return _Utils_Tuple2('0', '0');
+	}
+};
+var $elm$core$Tuple$mapFirst = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			func(x),
+			y);
+	});
+var $myrho$elm_round$Round$toDecimal = function (fl) {
+	var _v0 = A2(
+		$elm$core$String$split,
+		'e',
+		$elm$core$String$fromFloat(
+			$elm$core$Basics$abs(fl)));
+	if (_v0.b) {
+		if (_v0.b.b) {
+			var num = _v0.a;
+			var _v1 = _v0.b;
+			var exp = _v1.a;
+			var e = A2(
+				$elm$core$Maybe$withDefault,
+				0,
+				$elm$core$String$toInt(
+					A2($elm$core$String$startsWith, '+', exp) ? A2($elm$core$String$dropLeft, 1, exp) : exp));
+			var _v2 = $myrho$elm_round$Round$splitComma(num);
+			var before = _v2.a;
+			var after = _v2.b;
+			var total = _Utils_ap(before, after);
+			var zeroed = (e < 0) ? A2(
+				$elm$core$Maybe$withDefault,
+				'0',
+				A2(
+					$elm$core$Maybe$map,
+					function (_v3) {
+						var a = _v3.a;
+						var b = _v3.b;
+						return a + ('.' + b);
+					},
+					A2(
+						$elm$core$Maybe$map,
+						$elm$core$Tuple$mapFirst($elm$core$String$fromChar),
+						$elm$core$String$uncons(
+							_Utils_ap(
+								A2(
+									$elm$core$String$repeat,
+									$elm$core$Basics$abs(e),
+									'0'),
+								total))))) : A3(
+				$elm$core$String$padRight,
+				e + 1,
+				_Utils_chr('0'),
+				total);
+			return _Utils_ap(
+				(fl < 0) ? '-' : '',
+				zeroed);
+		} else {
+			var num = _v0.a;
+			return _Utils_ap(
+				(fl < 0) ? '-' : '',
+				num);
+		}
+	} else {
+		return '';
+	}
+};
+var $myrho$elm_round$Round$roundFun = F3(
+	function (functor, s, fl) {
+		if ($elm$core$Basics$isInfinite(fl) || $elm$core$Basics$isNaN(fl)) {
+			return $elm$core$String$fromFloat(fl);
+		} else {
+			var signed = fl < 0;
+			var _v0 = $myrho$elm_round$Round$splitComma(
+				$myrho$elm_round$Round$toDecimal(
+					$elm$core$Basics$abs(fl)));
+			var before = _v0.a;
+			var after = _v0.b;
+			var r = $elm$core$String$length(before) + s;
+			var normalized = _Utils_ap(
+				A2($elm$core$String$repeat, (-r) + 1, '0'),
+				A3(
+					$elm$core$String$padRight,
+					r,
+					_Utils_chr('0'),
+					_Utils_ap(before, after)));
+			var totalLen = $elm$core$String$length(normalized);
+			var roundDigitIndex = A2($elm$core$Basics$max, 1, r);
+			var increase = A2(
+				functor,
+				signed,
+				A3($elm$core$String$slice, roundDigitIndex, totalLen, normalized));
+			var remains = A3($elm$core$String$slice, 0, roundDigitIndex, normalized);
+			var num = increase ? $elm$core$String$reverse(
+				A2(
+					$elm$core$Maybe$withDefault,
+					'1',
+					A2(
+						$elm$core$Maybe$map,
+						$myrho$elm_round$Round$increaseNum,
+						$elm$core$String$uncons(
+							$elm$core$String$reverse(remains))))) : remains;
+			var numLen = $elm$core$String$length(num);
+			var numZeroed = (num === '0') ? num : ((s <= 0) ? _Utils_ap(
+				num,
+				A2(
+					$elm$core$String$repeat,
+					$elm$core$Basics$abs(s),
+					'0')) : ((_Utils_cmp(
+				s,
+				$elm$core$String$length(after)) < 0) ? (A3($elm$core$String$slice, 0, numLen - s, num) + ('.' + A3($elm$core$String$slice, numLen - s, numLen, num))) : _Utils_ap(
+				before + '.',
+				A3(
+					$elm$core$String$padRight,
+					s,
+					_Utils_chr('0'),
+					after))));
+			return A2($myrho$elm_round$Round$addSign, signed, numZeroed);
+		}
+	});
+var $myrho$elm_round$Round$round = $myrho$elm_round$Round$roundFun(
+	F2(
+		function (signed, str) {
+			var _v0 = $elm$core$String$uncons(str);
+			if (_v0.$ === 'Nothing') {
+				return false;
+			} else {
+				if ('5' === _v0.a.a.valueOf()) {
+					if (_v0.a.b === '') {
+						var _v1 = _v0.a;
+						return !signed;
+					} else {
+						var _v2 = _v0.a;
+						return true;
+					}
+				} else {
+					var _v3 = _v0.a;
+					var _int = _v3.a;
+					return function (i) {
+						return ((i > 53) && signed) || ((i >= 53) && (!signed));
+					}(
+						$elm$core$Char$toCode(_int));
+				}
+			}
+		}));
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Main$foodToListTable = F2(
@@ -11618,7 +12331,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.amount))
+											A2($myrho$elm_round$Round$round, 2, food.amount))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11626,7 +12339,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.kcal))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.kcal))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11634,7 +12347,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.carbs))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.carbs))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11642,7 +12355,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.fat))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.fat))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11650,7 +12363,7 @@ var $author$project$Main$foodToListTable = F2(
 									_List_fromArray(
 										[
 											$elm$html$Html$text(
-											$elm$core$String$fromFloat(food.nutrition.protein))
+											A2($myrho$elm_round$Round$round, 2, food.nutrition.protein))
 										])),
 									A2(
 									$elm$html$Html$td,
@@ -11807,87 +12520,10 @@ var $author$project$Main$foodTable = function (model) {
 					]))
 			]));
 };
-var $elm$html$Html$Events$keyCode = A2($elm$json$Json$Decode$field, 'keyCode', $elm$json$Json$Decode$int);
-var $author$project$Main$onKeyDown = function (tagger) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'keydown',
-		A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$keyCode));
-};
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $author$project$Main$OpenFood = F2(
-	function (a, b) {
-		return {$: 'OpenFood', a: a, b: b};
-	});
-var $author$project$Main$OpenModal = function (a) {
-	return {$: 'OpenModal', a: a};
-};
-var $author$project$Main$foodToSearchResultTable = function (foodList) {
-	return A2(
-		$elm$core$List$indexedMap,
-		F2(
-			function (i, ingredient) {
-				return A2(
-					$elm$html$Html$tr,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$id(
-							'row' + $elm$core$String$fromInt(i)),
-							$elm$html$Html$Events$onClick(
-							$author$project$Main$OpenModal(
-								A2($author$project$Main$OpenFood, ingredient, 3)))
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$elm$html$Html$td,
-							_List_Nil,
-							_List_fromArray(
-								[
-									$elm$html$Html$text(ingredient.name)
-								]))
-						]));
-			}),
-		foodList);
-};
-var $author$project$Main$ingredientToFood = function (ingredient) {
-	return {
-		amount: 0.0,
-		id: ingredient.id,
-		img: ingredient.img,
-		name: ingredient.name,
-		nutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0}
-	};
-};
-var $author$project$Main$searchResultsTable = function (model) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('table-container')
-			]),
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$table,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('table is-striped is-hoverable'),
-						A2($elm$html$Html$Attributes$style, 'width', '75em')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$tbody,
-						_List_Nil,
-						$author$project$Main$foodToSearchResultTable(
-							A2($elm$core$List$map, $author$project$Main$ingredientToFood, model.response)))
-					]))
-			]));
-};
-var $elm$html$Html$section = _VirtualDom_node('section');
+var $author$project$Main$FoodAmountInput = {$: 'FoodAmountInput'};
 var $elm$html$Html$figure = _VirtualDom_node('figure');
 var $elm$html$Html$img = _VirtualDom_node('img');
+var $author$project$Main$AddFood = {$: 'AddFood'};
 var $author$project$Main$CloseModal = {$: 'CloseModal'};
 var $elm$html$Html$footer = _VirtualDom_node('footer');
 var $author$project$Main$modalFooter = function (modalButtons) {
@@ -11906,6 +12542,18 @@ var $author$project$Main$modalFooter = function (modalButtons) {
 					_List_fromArray(
 						[
 							$elm$html$Html$Attributes$class('button is-primary'),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$ChangeFoods($author$project$Main$AddFood))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Hinzufügen')
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('button'),
 							$elm$html$Html$Events$onClick($author$project$Main$CloseModal)
 						]),
 					_List_fromArray(
@@ -12029,8 +12677,8 @@ var $author$project$Main$showFoodModal = function (food) {
 															[
 																$elm$html$Html$Attributes$class('tile is-child input'),
 																$elm$html$Html$Attributes$type_('number'),
-																$elm$html$Html$Attributes$placeholder('Suchen...'),
-																$elm$html$Html$Events$onInput($author$project$Main$Input)
+																$elm$html$Html$Events$onInput(
+																$author$project$Main$Input($author$project$Main$FoodAmountInput))
 															]),
 														_List_Nil)
 													])),
@@ -12089,7 +12737,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.kcal))
+																								$elm$core$String$fromFloat(food.nutrition.kcal * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12110,7 +12758,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.carbs))
+																								$elm$core$String$fromFloat(food.nutrition.carbs * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12131,7 +12779,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.fat))
+																								$elm$core$String$fromFloat(food.nutrition.fat * food.amount))
 																							]))
 																					])),
 																				A2(
@@ -12152,7 +12800,7 @@ var $author$project$Main$showFoodModal = function (food) {
 																						_List_fromArray(
 																							[
 																								$elm$html$Html$text(
-																								$elm$core$String$fromFloat(food.nutrition.protein))
+																								$elm$core$String$fromFloat(food.nutrition.protein * food.amount))
 																							]))
 																					]))
 																			]))
@@ -12166,7 +12814,7 @@ var $author$project$Main$showFoodModal = function (food) {
 				$author$project$Main$modalFooter(_List_Nil)
 			]));
 };
-var $author$project$Main$viewModal = function (model) {
+var $author$project$Main$modalView = function (model) {
 	var _v0 = model.modal;
 	if (_v0.$ === 'Nothing') {
 		return A2($elm$html$Html$span, _List_Nil, _List_Nil);
@@ -12193,6 +12841,529 @@ var $author$project$Main$viewModal = function (model) {
 				}()
 				]));
 	}
+};
+var $elm$html$Html$Events$keyCode = A2($elm$json$Json$Decode$field, 'keyCode', $elm$json$Json$Decode$int);
+var $author$project$Main$onKeyDown = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'keydown',
+		A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$keyCode));
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $author$project$Main$GetFoodData = F2(
+	function (a, b) {
+		return {$: 'GetFoodData', a: a, b: b};
+	});
+var $author$project$Main$foodToSearchResultTable = function (foodList) {
+	return A2(
+		$elm$core$List$indexedMap,
+		F2(
+			function (i, ingredient) {
+				return A2(
+					$elm$html$Html$tr,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$id(
+							'row' + $elm$core$String$fromInt(i)),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$ChangeFoods(
+								A2(
+									$author$project$Main$GetFoodData,
+									ingredient,
+									$elm$core$String$fromInt(ingredient.id))))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$td,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text(ingredient.name)
+								]))
+						]));
+			}),
+		foodList);
+};
+var $author$project$Main$ingredientToFood = function (ingredient) {
+	return {
+		amount: 0.0,
+		id: ingredient.id,
+		img: ingredient.img,
+		name: ingredient.name,
+		nutrition: {carbs: 0.0, fat: 0.0, kcal: 0.0, protein: 0.0}
+	};
+};
+var $author$project$Main$searchResultsTable = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('table-container')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$table,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table is-striped is-hoverable'),
+						A2($elm$html$Html$Attributes$style, 'width', '75em')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$tbody,
+						_List_Nil,
+						$author$project$Main$foodToSearchResultTable(
+							A2($elm$core$List$map, $author$project$Main$ingredientToFood, model.response)))
+					]))
+			]));
+};
+var $elm$html$Html$section = _VirtualDom_node('section');
+var $author$project$Main$CarbsSliderInput = {$: 'CarbsSliderInput'};
+var $author$project$Main$FatSliderInput = {$: 'FatSliderInput'};
+var $author$project$Main$KcalInput = {$: 'KcalInput'};
+var $author$project$Main$ProteinSliderInput = {$: 'ProteinSliderInput'};
+var $elm$html$Html$label = _VirtualDom_node('label');
+var $author$project$Main$nutritionSettingsSection = function (model) {
+	var value = $elm$html$Html$Attributes$value;
+	var notificationClass = ((A2(
+		$elm$core$Maybe$withDefault,
+		0,
+		$elm$core$String$toInt(model.settings.nutritionSettings.fatSplit)) + (A2(
+		$elm$core$Maybe$withDefault,
+		0,
+		$elm$core$String$toInt(model.settings.nutritionSettings.carbsSplit)) + A2(
+		$elm$core$Maybe$withDefault,
+		0,
+		$elm$core$String$toInt(model.settings.nutritionSettings.proteinSplit)))) === 100) ? 'notification is-primary' : 'notification is-danger';
+	var n = model.settings.nutritionSettings;
+	var min = $elm$html$Html$Attributes$min;
+	var max = $elm$html$Html$Attributes$max;
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('box')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h1,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('subtitle')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Nährwerteinstellung')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('field')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class(notificationClass)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Gesamt-%')
+											])),
+										A2(
+										$elm$html$Html$span,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text(
+												$elm$core$String$fromInt(
+													A2(
+														$elm$core$Maybe$withDefault,
+														0,
+														$elm$core$String$toInt(model.settings.nutritionSettings.fatSplit)) + (A2(
+														$elm$core$Maybe$withDefault,
+														0,
+														$elm$core$String$toInt(model.settings.nutritionSettings.carbsSplit)) + A2(
+														$elm$core$Maybe$withDefault,
+														0,
+														$elm$core$String$toInt(model.settings.nutritionSettings.proteinSplit)))) + '%')
+											])),
+										A2(
+										$elm$html$Html$span,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Die Makronährstoffe müssen gleich 100% sein')
+											]))
+									])),
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('label')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Fettanteil')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$type_('range'),
+										$elm$html$Html$Attributes$class('slider'),
+										$elm$html$Html$Attributes$placeholder('Anzahl Suchergebnisse'),
+										min('0'),
+										max('100'),
+										value(n.fatSplit),
+										$elm$html$Html$Events$onInput(
+										$author$project$Main$Input($author$project$Main$FatSliderInput))
+									]),
+								_List_Nil),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('tag is-primary is-light'),
+										A2($elm$html$Html$Attributes$style, 'margin-left', '7.5px'),
+										A2($elm$html$Html$Attributes$style, 'width', '35px')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(model.settings.nutritionSettings.fatSplit + '%')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('label')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Kohlenhydrateanteil')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$type_('range'),
+										$elm$html$Html$Attributes$class('slider'),
+										$elm$html$Html$Attributes$placeholder('Anzahl Suchergebnisse'),
+										min('0'),
+										max('100'),
+										value(n.carbsSplit),
+										$elm$html$Html$Events$onInput(
+										$author$project$Main$Input($author$project$Main$CarbsSliderInput))
+									]),
+								_List_Nil),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('tag is-light is-primary '),
+										A2($elm$html$Html$Attributes$style, 'margin-left', '7.5px'),
+										A2($elm$html$Html$Attributes$style, 'width', '35px')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(model.settings.nutritionSettings.carbsSplit + '%')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('label')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Eiweißanteil')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$type_('range'),
+										$elm$html$Html$Attributes$class('slider'),
+										$elm$html$Html$Attributes$placeholder('Anzahl Suchergebnisse'),
+										min('0'),
+										max('100'),
+										value(n.proteinSplit),
+										$elm$html$Html$Events$onInput(
+										$author$project$Main$Input($author$project$Main$ProteinSliderInput))
+									]),
+								_List_Nil),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('tag is-primary is-light'),
+										A2($elm$html$Html$Attributes$style, 'margin-left', '7.5px'),
+										A2($elm$html$Html$Attributes$style, 'width', '35px')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(model.settings.nutritionSettings.proteinSplit + '%')
+									]))
+							])),
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('label')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Kalorienziel')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('input is-primary'),
+								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$placeholder('Kalorienziel'),
+								value(n.kcalGoal),
+								$elm$html$Html$Events$onInput(
+								$author$project$Main$Input($author$project$Main$KcalInput))
+							]),
+						_List_Nil)
+					]))
+			]));
+};
+var $author$project$Main$SearchNumberInput = {$: 'SearchNumberInput'};
+var $author$project$Main$SearchSortDirectionInput = {$: 'SearchSortDirectionInput'};
+var $author$project$Main$SearchSortInput = {$: 'SearchSortInput'};
+var $elm$html$Html$option = _VirtualDom_node('option');
+var $elm$html$Html$select = _VirtualDom_node('select');
+var $author$project$Main$searchSettingsSection = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('box')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h1,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('subtitle')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Sucheinstellung')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('field')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('label')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Anzahl Suchergebnisse')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('input is-primary'),
+								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$placeholder('Anzahl Suchergebnisse'),
+								$elm$html$Html$Attributes$value(model.settings.searchSettings.number),
+								$elm$html$Html$Events$onInput(
+								$author$project$Main$Input($author$project$Main$SearchNumberInput))
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('label')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Sortieren nach')
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('control')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('select is-primary')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$select,
+										_List_fromArray(
+											[
+												$elm$html$Html$Events$onInput(
+												$author$project$Main$Input($author$project$Main$SearchSortInput))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$value('calories')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Kalorien')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$value('total-fat')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Fett')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$value('carbs')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Kohlenhydrate')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$value('protein')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Eiweiß')
+													]))
+											]))
+									]))
+							]))
+					])),
+				A2(
+				$elm$html$Html$label,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('label')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Sortierungsreihenfolge')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('control')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('select is-primary')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$select,
+								_List_fromArray(
+									[
+										$elm$html$Html$Events$onInput(
+										$author$project$Main$Input($author$project$Main$SearchSortDirectionInput))
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$option,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$value('desc')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Absteigend')
+											])),
+										A2(
+										$elm$html$Html$option,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$value('asc')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Aufsteigend')
+											]))
+									]))
+							]))
+					]))
+			]));
+};
+var $author$project$Main$settingsView = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
+		_List_fromArray(
+			[
+				$author$project$Main$searchSettingsSection(model),
+				$author$project$Main$nutritionSettingsSection(model)
+			]));
 };
 var $author$project$Main$pageContent = function (model) {
 	var _v0 = model.page;
@@ -12225,7 +13396,7 @@ var $author$project$Main$pageContent = function (model) {
 					[
 						$author$project$Main$foodTable(model)
 					]));
-		default:
+		case 'Suche':
 			return A2(
 				$elm$html$Html$section,
 				_List_fromArray(
@@ -12265,7 +13436,8 @@ var $author$project$Main$pageContent = function (model) {
 														$elm$html$Html$Attributes$class('input'),
 														$elm$html$Html$Attributes$type_('text'),
 														$elm$html$Html$Attributes$placeholder('Suchen...'),
-														$elm$html$Html$Events$onInput($author$project$Main$Input),
+														$elm$html$Html$Events$onInput(
+														$author$project$Main$Input($author$project$Main$SearchInput)),
 														$author$project$Main$onKeyDown($author$project$Main$KeyDown),
 														A2($elm$html$Html$Attributes$style, 'width', '75em')
 													]),
@@ -12295,10 +13467,42 @@ var $author$project$Main$pageContent = function (model) {
 											]))
 									])),
 								$author$project$Main$searchResultsTable(model),
-								$author$project$Main$viewModal(model)
+								$author$project$Main$modalView(model)
 							]))
 					]));
+		default:
+			return A2(
+				$elm$html$Html$section,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('section')
+					]),
+				_List_fromArray(
+					[
+						$author$project$Main$settingsView(model)
+					]));
 	}
+};
+var $author$project$Main$popup = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class(
+				(_Utils_eq(
+					model.popUp,
+					$elm$core$Maybe$Just($author$project$Main$FoodAdded)) && (model.counter > 0)) ? 'animate__animated animate__bounce showSnackbar box' : 'animate__animated animate__bounce snackbar box ')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Eintrag hinzugefügt')
+					]))
+			]));
 };
 var $author$project$Main$view = function (model) {
 	return {
@@ -12310,7 +13514,18 @@ var $author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						$author$project$Main$navbar(model),
-						$author$project$Main$pageContent(model)
+						$author$project$Main$pageContent(model),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Main$TogglePopUp)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('toggle')
+							])),
+						$author$project$Main$popup(model)
 					]))
 			]),
 		title: 'MyApp'
@@ -12319,4 +13534,4 @@ var $author$project$Main$view = function (model) {
 var $author$project$Main$main = $elm$browser$Browser$application(
 	{init: $author$project$Main$init, onUrlChange: $author$project$Main$UrlChanged, onUrlRequest: $author$project$Main$LinkClicked, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Main.Food":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String, amount : Basics.Float, nutrition : Main.Nutrition }"},"Main.HTTPSearchResults":{"args":[],"type":"{ results : List.List Main.Ingredient, offset : Basics.Int, number : Basics.Int, totalResults : Basics.Int }"},"Main.Ingredient":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String }"},"Main.Nutrition":{"args":[],"type":"{ kcal : Basics.Float, protein : Basics.Float, fat : Basics.Float, carbs : Basics.Float }"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"LinkClicked":["Browser.UrlRequest"],"UrlChanged":["Url.Url"],"OpenModal":["Main.ModalMsg"],"CloseModal":[],"ChangeFoods":["Main.FoodMsg"],"GotFoods":["Result.Result Http.Error Main.HTTPSearchResults"],"GotFoodData":["Result.Result Http.Error Main.Food"],"Input":["String.String"],"KeyDown":["Basics.Int"]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Main.FoodMsg":{"args":[],"tags":{"GetFoods":["String.String"],"GetFoodData":["String.String"],"DeleteFood":["Basics.Int"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Main.ModalMsg":{"args":[],"tags":{"OpenFood":["Main.Food","Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Main.Food":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String, amount : Basics.Float, nutrition : Main.Nutrition }"},"Main.HTTPSearchResults":{"args":[],"type":"{ results : List.List Main.Ingredient, offset : Basics.Int, number : Basics.Int, totalResults : Basics.Int }"},"Main.Ingredient":{"args":[],"type":"{ name : String.String, id : Basics.Int, img : String.String }"},"Main.Nutrition":{"args":[],"type":"{ kcal : Basics.Float, protein : Basics.Float, fat : Basics.Float, carbs : Basics.Float }"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"LinkClicked":["Browser.UrlRequest"],"UrlChanged":["Url.Url"],"Tick":["Time.Posix"],"OpenModal":["Main.ModalMsg"],"CloseModal":[],"TogglePopUp":[],"ChangeFoods":["Main.FoodMsg"],"GotFoods":["Result.Result Http.Error Main.HTTPSearchResults"],"GotFoodData":["Result.Result Http.Error Main.Food"],"Input":["Main.Input","String.String"],"KeyDown":["Basics.Int"]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Main.FoodMsg":{"args":[],"tags":{"GetFoods":["String.String"],"GetFoodData":["Main.Food","String.String"],"AddFood":[],"DeleteFood":["Basics.Int"]}},"Main.Input":{"args":[],"tags":{"SearchInput":[],"FoodAmountInput":[],"SearchNumberInput":[],"SearchSortInput":[],"SearchSortDirectionInput":[],"KcalInput":[],"FatSliderInput":[],"CarbsSliderInput":[],"ProteinSliderInput":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Main.ModalMsg":{"args":[],"tags":{"OpenFood":["Main.Food","Basics.Int"]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
