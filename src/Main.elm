@@ -445,7 +445,7 @@ navbar model =
     nav [ class "navbar is-primary" ]
         [ div [ class "navbar-brand" ]
             [ a [ class "navbar-item", href "#home" ]
-                [ h1 [ class "tile" ] [ img [ src "/src/NutriTrack23.svg" ] [] ]
+                [ h1 [ class "tile" ] [ img [ src "./src/NutriTrack23.svg" ] [] ]
                 ]
             ]
         , div [ class "navbar-menu" ]
@@ -629,7 +629,19 @@ pageContent model =
 
         Liste ->
             section [ class "section" ]
-                [ div [ class "container" ] [ foodTable model ]
+                [ div [ class "container" ]
+                    [ if length model.foods == 0 then
+                        div []
+                            [ div []
+                                [ h1 [ class "subtitle", style "text-align: center;" ]
+                                    [ text "Noch kein Eintrag hinzugefügt."
+                                    ]
+                                , div [ Html.Attributes.style "display" "flex", Html.Attributes.style "justify-content" "center" ] [ img [ class "image", src "./src/Ente.svg", Html.Attributes.style "height" "750px", Html.Attributes.style "width" "500px" ] [] ]
+                                ]
+                            ]
+                      else
+                        foodTable model
+                    ]
                 ]
 
         Suche ->
@@ -856,7 +868,7 @@ nutritionSettingsSection model =
         , div [ class "field" ]
             [ div []
                 [ div [ class notificationClass ]
-                    [ span [] [ text "Gesamt-%" ]
+                    [ span [] [ text "Insgesamt " ]
                     , span []
                         [ text
                             (String.fromInt
@@ -865,10 +877,10 @@ nutritionSettingsSection model =
                                         + Maybe.withDefault 0 (String.toInt model.settings.nutritionSettings.proteinSplit)
                                       )
                                 )
-                                ++ "%"
+                                ++ "%:"
                             )
                         ]
-                    , span [] [ text "Die Makronährstoffe müssen gleich 100% sein" ]
+                    , span [] [ text " Die Makronährstoffe müssen gleich 100% sein" ]
                     ]
                 , label [ class "label" ] [ text "Fettanteil" ]
                 , input
@@ -943,31 +955,22 @@ type TableType
 
 foodTable : Model -> Html Msg
 foodTable model =
-    if length model.foods == 0 then
-        div []
-            [ div [] [h1 [ class "subtitle", style "text-align: center;" ]
-                [ text "Noch kein Eintrag hinzugefügt."
-                ], div [Html.Attributes.style "display" "flex", Html.Attributes.style "justify-content" "center"] [img [class "image", src "/src/Ente.svg", Html.Attributes.style "height" "750px",Html.Attributes.style "width" "500px" ] []]
-                ]
-            ]
-
-    else
-        div [ class "table-container" ]
-            [ table [ class "table is-striped is-hoverable", Html.Attributes.style "width" "100%" ]
-                [ thead []
-                    [ tr []
-                        [ th [ class "thead" ] [ text "Name" ]
-                        , th [ class "thead" ] [ text "Menge" ]
-                        , th [ class "thead" ] [ text "Kalorien" ]
-                        , th [ class "thead" ] [ text "Kohlenhydrate" ]
-                        , th [ class "thead" ] [ text "Fett" ]
-                        , th [ class "thead" ] [ text "Eiweiß" ]
-                        , th [ class "thead" ] []
-                        ]
+    div [ class "table-container" ]
+        [ table [ class "table is-striped is-hoverable", Html.Attributes.style "width" "100%" ]
+            [ thead []
+                [ tr []
+                    [ th [ class "thead" ] [ text "Name" ]
+                    , th [ class "thead" ] [ text "Menge" ]
+                    , th [ class "thead" ] [ text "Kalorien" ]
+                    , th [ class "thead" ] [ text "Kohlenhydrate" ]
+                    , th [ class "thead" ] [ text "Fett" ]
+                    , th [ class "thead" ] [ text "Eiweiß" ]
+                    , th [ class "thead" ] []
                     ]
-                , tbody [] (foodToListTable model.foods FoodsList)
                 ]
+            , tbody [] (foodToListTable model.foods FoodsList)
             ]
+        ]
 
 
 searchResultsTable : Model -> Html Msg

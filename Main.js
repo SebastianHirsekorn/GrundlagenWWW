@@ -7318,7 +7318,7 @@ var $author$project$Main$navbar = function (model) {
 										$elm$html$Html$img,
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$src('/src/NutriTrack23.svg')
+												$elm$html$Html$Attributes$src('./src/NutriTrack23.svg')
 											]),
 										_List_Nil)
 									]))
@@ -9881,55 +9881,12 @@ var $author$project$Main$foodToListTable = F2(
 	});
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
-var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$th = _VirtualDom_node('th');
 var $elm$html$Html$thead = _VirtualDom_node('thead');
 var $author$project$Main$foodTable = function (model) {
-	return (!$elm$core$List$length(model.foods)) ? A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$h1,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$class('subtitle'),
-								$elm$svg$Svg$Attributes$style('text-align: center;')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Noch kein Eintrag hinzugefügt.')
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_fromArray(
-							[
-								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-								A2($elm$html$Html$Attributes$style, 'justify-content', 'center')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$img,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('image'),
-										$elm$html$Html$Attributes$src('/src/Ente.svg'),
-										A2($elm$html$Html$Attributes$style, 'height', '750px'),
-										A2($elm$html$Html$Attributes$style, 'width', '500px')
-									]),
-								_List_Nil)
-							]))
-					]))
-			])) : A2(
+	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
@@ -10540,7 +10497,7 @@ var $author$project$Main$nutritionSettingsSection = function (model) {
 										_List_Nil,
 										_List_fromArray(
 											[
-												$elm$html$Html$text('Gesamt-%')
+												$elm$html$Html$text('Insgesamt ')
 											])),
 										A2(
 										$elm$html$Html$span,
@@ -10558,14 +10515,14 @@ var $author$project$Main$nutritionSettingsSection = function (model) {
 														$elm$core$String$toInt(model.settings.nutritionSettings.carbsSplit)) + A2(
 														$elm$core$Maybe$withDefault,
 														0,
-														$elm$core$String$toInt(model.settings.nutritionSettings.proteinSplit)))) + '%')
+														$elm$core$String$toInt(model.settings.nutritionSettings.proteinSplit)))) + '%:')
 											])),
 										A2(
 										$elm$html$Html$span,
 										_List_Nil,
 										_List_fromArray(
 											[
-												$elm$html$Html$text('Die Makronährstoffe müssen gleich 100% sein')
+												$elm$html$Html$text(' Die Makronährstoffe müssen gleich 100% sein')
 											]))
 									])),
 								A2(
@@ -10920,6 +10877,7 @@ var $author$project$Main$settingsView = function (model) {
 				$author$project$Main$nutritionSettingsSection(model)
 			]));
 };
+var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
 var $author$project$Main$pageContent = function (model) {
 	var _v0 = model.page;
 	switch (_v0.$) {
@@ -11547,7 +11505,49 @@ var $author$project$Main$pageContent = function (model) {
 							]),
 						_List_fromArray(
 							[
-								$author$project$Main$foodTable(model)
+								(!$elm$core$List$length(model.foods)) ? A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$div,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$h1,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('subtitle'),
+														$elm$svg$Svg$Attributes$style('text-align: center;')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Noch kein Eintrag hinzugefügt.')
+													])),
+												A2(
+												$elm$html$Html$div,
+												_List_fromArray(
+													[
+														A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+														A2($elm$html$Html$Attributes$style, 'justify-content', 'center')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$img,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('image'),
+																$elm$html$Html$Attributes$src('./src/Ente.svg'),
+																A2($elm$html$Html$Attributes$style, 'height', '750px'),
+																A2($elm$html$Html$Attributes$style, 'width', '500px')
+															]),
+														_List_Nil)
+													]))
+											]))
+									])) : $author$project$Main$foodTable(model)
 							]))
 					]));
 		case 'Suche':
