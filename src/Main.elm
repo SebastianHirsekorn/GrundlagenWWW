@@ -142,7 +142,22 @@ init flags url key =
     ( { key = key
       , url = url
       , counter = 0
-      , page = Home
+      , page =
+            case url.fragment of
+                Just "home" ->
+                    Home
+
+                Just "list" ->
+                    Liste
+
+                Just "search" ->
+                    Suche
+
+                Just "settings" ->
+                    Einstellungen
+
+                _ ->
+                    Home
       , modal = Nothing
       , popUp = Nothing
       , foods = []
@@ -639,6 +654,7 @@ pageContent model =
                                 , div [ Html.Attributes.style "display" "flex", Html.Attributes.style "justify-content" "center" ] [ img [ class "image", src "./src/Ente.svg", Html.Attributes.style "height" "750px", Html.Attributes.style "width" "500px" ] [] ]
                                 ]
                             ]
+
                       else
                         foodTable model
                     ]
@@ -712,20 +728,24 @@ modalFooter modalButtons =
 
 showFoodModal : Food -> Html Msg
 showFoodModal food =
-    div [ class "modal-card", Html.Attributes.style "width" "50em" ]
+    let
+        s =
+            Html.Attributes.style
+    in
+    div [ class "modal-card", s "width" "50em" ]
         [ modalHeader food.name
         , div [ class "modal-card-body" ]
-            [ div [ class "tile is-ancestor", Html.Attributes.style "width" "100%" ]
+            [ div [ class "tile is-ancestor", s "width" "100%" ]
                 [ div [ class "tile is-6" ]
                     [ div [ class "tile" ]
                         [ div [ class "tile is-parent is-vertical" ]
                             [ figure [ class "tile is-child image is-128x128" ]
                                 [ img [ src ("https://spoonacular.com/cdn/ingredients_100x100/" ++ food.img) ] []
                                 ]
-                            , input [ class "tile is-child input", type_ "number", Html.Attributes.min "0", onInput (Input FoodAmountInput) ] []
+                            , input [ class "tile is-child input", s "height" "15px", type_ "number", Html.Attributes.min "0", onInput (Input FoodAmountInput) ] []
                             ]
                         , div [ class "tile is-parent is-vertical" ]
-                            [ h1 [ class "tile is-child title is-4", Html.Attributes.style "width" "100%" ] [ text "Nährwerte" ]
+                            [ h1 [ class "tile is-child title is-4", s "width" "100%" ] [ text "Nährwerte" ]
                             , div [ class "content" ]
                                 [ table []
                                     [ tbody []
@@ -805,7 +825,7 @@ searchSettingsSection model =
         [ h1 [ class "subtitle" ] [ text "Sucheinstellung" ]
         , div [ class "field" ]
             [ label [ class "label" ] [ text "Anzahl Suchergebnisse" ]
-            , input [ class "input is-primary", type_ "number", placeholder "Anzahl Suchergebnisse", value model.settings.searchSettings.number, onInput (Input SearchNumberInput) ] []
+            , input [ class "input is-primary", type_ "number", Html.Attributes.min "1", placeholder "Anzahl Suchergebnisse", value model.settings.searchSettings.number, onInput (Input SearchNumberInput) ] []
             , label [ class "label" ] [ text "Sortieren nach" ]
             , div [ class "control" ]
                 [ div [ class "select is-primary" ]
@@ -939,7 +959,7 @@ nutritionSettingsSection model =
                     [ text (model.settings.nutritionSettings.proteinSplit ++ "%") ]
                 ]
             , label [ class "label" ] [ text "Kalorienziel" ]
-            , input [ class "input is-primary", type_ "number", placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
+            , input [ class "input is-primary", type_ "number",  Html.Attributes.min "0",  placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
             ]
         ]
 

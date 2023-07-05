@@ -5423,7 +5423,10 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$application = _Browser_application;
+var $author$project$Main$Einstellungen = {$: 'Einstellungen'};
 var $author$project$Main$Home = {$: 'Home'};
+var $author$project$Main$Liste = {$: 'Liste'};
+var $author$project$Main$Suche = {$: 'Suche'};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = F3(
@@ -5436,7 +5439,29 @@ var $author$project$Main$init = F3(
 				foods: _List_Nil,
 				key: key,
 				modal: $elm$core$Maybe$Nothing,
-				page: $author$project$Main$Home,
+				page: function () {
+					var _v0 = url.fragment;
+					_v0$4:
+					while (true) {
+						if (_v0.$ === 'Just') {
+							switch (_v0.a) {
+								case 'home':
+									return $author$project$Main$Home;
+								case 'list':
+									return $author$project$Main$Liste;
+								case 'search':
+									return $author$project$Main$Suche;
+								case 'settings':
+									return $author$project$Main$Einstellungen;
+								default:
+									break _v0$4;
+							}
+						} else {
+							break _v0$4;
+						}
+					}
+					return $author$project$Main$Home;
+				}(),
 				popUp: $elm$core$Maybe$Nothing,
 				response: _List_Nil,
 				searchTerm: '',
@@ -5876,16 +5901,13 @@ var $elm$time$Time$every = F2(
 var $author$project$Main$subscriptions = function (model) {
 	return A2($elm$time$Time$every, 1000, $author$project$Main$Tick);
 };
-var $author$project$Main$Einstellungen = {$: 'Einstellungen'};
 var $author$project$Main$FoodAdded = {$: 'FoodAdded'};
 var $author$project$Main$GetFoods = function (a) {
 	return {$: 'GetFoods', a: a};
 };
-var $author$project$Main$Liste = {$: 'Liste'};
 var $author$project$Main$ShowFood = function (a) {
 	return {$: 'ShowFood', a: a};
 };
-var $author$project$Main$Suche = {$: 'Suche'};
 var $elm$core$Basics$ge = _Utils_ge;
 var $elm$browser$Browser$Navigation$load = _Browser_load;
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
@@ -10101,12 +10123,13 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 };
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $author$project$Main$showFoodModal = function (food) {
+	var s = $elm$html$Html$Attributes$style;
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
 				$elm$html$Html$Attributes$class('modal-card'),
-				A2($elm$html$Html$Attributes$style, 'width', '50em')
+				A2(s, 'width', '50em')
 			]),
 		_List_fromArray(
 			[
@@ -10124,7 +10147,7 @@ var $author$project$Main$showFoodModal = function (food) {
 						_List_fromArray(
 							[
 								$elm$html$Html$Attributes$class('tile is-ancestor'),
-								A2($elm$html$Html$Attributes$style, 'width', '100%')
+								A2(s, 'width', '100%')
 							]),
 						_List_fromArray(
 							[
@@ -10173,6 +10196,7 @@ var $author$project$Main$showFoodModal = function (food) {
 														_List_fromArray(
 															[
 																$elm$html$Html$Attributes$class('tile is-child input'),
+																A2(s, 'height', '15px'),
 																$elm$html$Html$Attributes$type_('number'),
 																$elm$html$Html$Attributes$min('0'),
 																$elm$html$Html$Events$onInput(
@@ -10193,7 +10217,7 @@ var $author$project$Main$showFoodModal = function (food) {
 														_List_fromArray(
 															[
 																$elm$html$Html$Attributes$class('tile is-child title is-4'),
-																A2($elm$html$Html$Attributes$style, 'width', '100%')
+																A2(s, 'width', '100%')
 															]),
 														_List_fromArray(
 															[
@@ -10662,6 +10686,7 @@ var $author$project$Main$nutritionSettingsSection = function (model) {
 							[
 								$elm$html$Html$Attributes$class('input is-primary'),
 								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$min('0'),
 								$elm$html$Html$Attributes$placeholder('Kalorienziel'),
 								value(n.kcalGoal),
 								$elm$html$Html$Events$onInput(
@@ -10719,6 +10744,7 @@ var $author$project$Main$searchSettingsSection = function (model) {
 							[
 								$elm$html$Html$Attributes$class('input is-primary'),
 								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$min('1'),
 								$elm$html$Html$Attributes$placeholder('Anzahl Suchergebnisse'),
 								$elm$html$Html$Attributes$value(model.settings.searchSettings.number),
 								$elm$html$Html$Events$onInput(
