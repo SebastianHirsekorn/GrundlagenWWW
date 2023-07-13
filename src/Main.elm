@@ -380,7 +380,7 @@ updateFood foodMsg model =
 
                 newFoods =
                     List.append model.foods
-                        [ setNutrition food
+                        [ food
                         ]
               in
               { model
@@ -749,10 +749,10 @@ showFoodModal food =
                             , div [ class "content" ]
                                 [ table []
                                     [ tbody []
-                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat (food.nutrition.kcal * food.amount)) ] ]
-                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat (food.nutrition.carbs * food.amount)) ] ]
-                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat (food.nutrition.fat * food.amount)) ] ]
-                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat (food.nutrition.protein * food.amount)) ] ]
+                                        [ tr [] [ td [] [ text "Kcal:" ], td [] [ text (String.fromFloat food.nutrition.kcal) ] ]
+                                        , tr [] [ td [] [ text "Kohlenhydrate:" ], td [] [ text (String.fromFloat food.nutrition.carbs) ] ]
+                                        , tr [] [ td [] [ text "Fett:" ], td [] [ text (String.fromFloat food.nutrition.fat) ] ]
+                                        , tr [] [ td [] [ text "Eiweiß:" ], td [] [ text (String.fromFloat food.nutrition.protein) ] ]
                                         ]
                                     ]
                                 ]
@@ -959,7 +959,7 @@ nutritionSettingsSection model =
                     [ text (model.settings.nutritionSettings.proteinSplit ++ "%") ]
                 ]
             , label [ class "label" ] [ text "Kalorienziel" ]
-            , input [ class "input is-primary", type_ "number",  Html.Attributes.min "0",  placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
+            , input [ class "input is-primary", type_ "number", Html.Attributes.min "0", placeholder "Kalorienziel", value n.kcalGoal, onInput (Input KcalInput) ] []
             ]
         ]
 
